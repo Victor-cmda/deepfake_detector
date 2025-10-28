@@ -484,4 +484,4 @@ if __name__ == '__main__':
     # test_interface()
     
     # Para lançar a interface, descomente a linha abaixo:
-    launch_interface(share=False, server_port=7)
+    launch_interface(share=False, server_port=7860)
