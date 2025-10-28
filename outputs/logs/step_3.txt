@@ -1,0 +1,125 @@
+TAREFA 3: Gerar divisão treino/validação/teste
+==============================================
+Data: 28/10/2025
+Status: CONCLUÍDA
+
+Ações Realizadas:
+-----------------
+1. ✓ Implementada função generate_train_val_test_split() em src/utils.py:
+   - Divisão estratificada por label (mantém proporção real/fake)
+   - Distribuição configurável (70/15/15)
+   - Seed fixo para reprodutibilidade (seed=42)
+   - Embaralhamento independente por classe
+
+2. ✓ Criado script generate_splits.py:
+   - Lê index_faceforensicspp.csv
+   - Gera splits_faceforensicspp.csv
+   - Mostra estatísticas detalhadas
+
+3. ✓ Criado script auxiliar create_sample_videos.py:
+   - Gera 30 vídeos de exemplo para demonstração
+   - FaceForensics++: 20 vídeos (10 reais, 10 fakes)
+   - Celeb-DF-v2: 10 vídeos (5 reais, 5 fakes)
+   - WildDeepfake: 10 vídeos (5 reais, 5 fakes)
+   - Cada vídeo: 60 frames, 2 segundos, 30 fps
+
+4. ✓ Criado script validate_splits.py:
+   - Valida integridade do arquivo de splits
+   - Verifica distribuição e balanceamento
+   - Confirma existência de arquivos
+   - Detecta duplicatas
+
+5. ✓ Arquivo gerado: data/splits_faceforensicspp.csv
+
+Estrutura do Arquivo Gerado:
+-----------------------------
+Colunas:
+- video_path: Caminho completo do vídeo
+- label: 0 (real) ou 1 (fake)
+- dataset: "FaceForensics++"
+- num_frames: Número total de frames
+- split: "train", "val" ou "test"
+
+Distribuição Alcançada:
+-----------------------
+Total de vídeos: 20
+
+TRAIN (70.0%):
+  - Total: 14 vídeos
+  - Reais: 7 (50.0%)
+  - Fakes: 7 (50.0%)
+  - Balanceamento: ✓ OK
+
+VAL (10.0%):
+  - Total: 2 vídeos
+  - Reais: 1 (50.0%)
+  - Fakes: 1 (50.0%)
+  - Balanceamento: ✓ OK
+
+TEST (20.0%):
+  - Total: 4 vídeos
+  - Reais: 2 (50.0%)
+  - Fakes: 2 (50.0%)
+  - Balanceamento: ✓ OK
+
+Métricas (conforme instructions.json):
+---------------------------------------
+- total_videos: 20
+- frames_por_video: 60.0 (média)
+- distribuição_train: 70.0%
+- distribuição_val: 10.0%
+- distribuição_test: 20.0%
+- balanceamento_real_fake: 50/50 em cada split ✓
+
+Validações Realizadas:
+----------------------
+✓ Colunas corretas presentes
+✓ Splits válidos (train, val, test)
+✓ Todos os arquivos existem
+✓ Nenhuma duplicata
+✓ Balanceamento por label mantido
+✓ Distribuição próxima a 70/15/15
+
+Datasets Externos:
+------------------
+Conforme especificado, os datasets externos permanecem completos:
+- Celeb-DF-v2: 10 vídeos completos (não divididos)
+- WildDeepfake: 10 vídeos completos (não divididos)
+- Serão usados para avaliação cross-dataset na Tarefa 9
+
+Outputs Gerados:
+----------------
+✓ data/splits_faceforensicspp.csv (arquivo único, 20 linhas + header)
+✓ create_sample_videos.py (script auxiliar)
+✓ validate_splits.py (script de validação)
+
+Reprodutibilidade:
+------------------
+- Seed global: 42
+- Algoritmo determinístico
+- Reexecutar generate_splits.py produz resultado idêntico
+- Arquivo sempre sobrescrito (sem duplicação)
+
+Pipeline de Execução:
+---------------------
+1. python create_sample_videos.py  (criar vídeos de exemplo)
+2. python organize_datasets.py     (indexar vídeos)
+3. python generate_splits.py       (gerar splits)
+4. python validate_splits.py       (validar resultado)
+
+Próximos Passos:
+----------------
+Tarefa 4: Implementar pré-processamento em src/preprocessing.py
+- Extração de frames
+- Detecção facial MTCNN
+- Recorte e normalização
+- Visualização de exemplos
+
+Observações:
+------------
+- Arquivo único gerado (data/splits_faceforensicspp.csv)
+- Nenhuma duplicata criada
+- Estrutura consistente com instructions.json
+- Script pode ser reexecutado sem problemas
+- Balanceamento perfeito mantido em todos os splits
+- Pronto para uso nas etapas de treinamento e avaliação

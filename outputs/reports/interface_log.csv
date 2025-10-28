@@ -1,0 +1,4 @@
+timestamp,video_name,video_path,prediction,probabilidade_fake,probabilidade_real,tempo_inferencia,detection_rate,num_frames,model
+2025-10-28 19:36:03,wild_real_003.mp4,data/wilddeepfake/videos_real/wild_real_003.mp4,REAL,0.4995855093002319,0.5004144906997681,0.8675878047943115,100.0,16,models/model_best.pt
+2025-10-28 19:39:19,celeb_fake_002.mp4,/private/var/folders/29/fqzxxldx5mggfltqvcbhx_pm0000gn/T/gradio/727066cd3e933fc76928c63ab1baf84603ea59316a5b01316671563df70ab454/celeb_fake_002.mp4,FAKE,0.5040020942687988,0.4959979057312011,0.3286101818084717,100.0,8,models/model_best.pt
+2025-10-28 19:40:09,celeb_fake_001.mp4,/private/var/folders/29/fqzxxldx5mggfltqvcbhx_pm0000gn/T/gradio/727066cd3e933fc76928c63ab1baf84603ea59316a5b01316671563df70ab454/celeb_fake_001.mp4,REAL,0.4983173906803131,0.5016826093196869,0.34944581985473633,100.0,32,models/model_best.pt

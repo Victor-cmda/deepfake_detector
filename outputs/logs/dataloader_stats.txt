@@ -1,0 +1,56 @@
+============================================================
+RELATÓRIO DE DATALOADERS
+============================================================
+
+TRAIN:
+------------------------------------------------------------
+Total de vídeos: 14
+Batch size: 4
+Número de batches: 4
+Shuffle: True
+
+Distribuição de labels:
+  - Reais: 7 (50.0%)
+  - Fakes: 7 (50.0%)
+
+Pesos das classes (para balanceamento):
+  - Real: 1.0000
+  - Fake: 1.0000
+
+VAL:
+------------------------------------------------------------
+Total de vídeos: 2
+Batch size: 4
+Número de batches: 1
+Shuffle: True
+
+Distribuição de labels:
+  - Reais: 1 (50.0%)
+  - Fakes: 1 (50.0%)
+
+Pesos das classes (para balanceamento):
+  - Real: 1.0000
+  - Fake: 1.0000
+
+TEST:
+------------------------------------------------------------
+Total de vídeos: 4
+Batch size: 4
+Número de batches: 1
+Shuffle: True
+
+Distribuição de labels:
+  - Reais: 2 (50.0%)
+  - Fakes: 2 (50.0%)
+
+Pesos das classes (para balanceamento):
+  - Real: 1.0000
+  - Fake: 1.0000
+
+============================================================
+CONFIGURAÇÕES:
+============================================================
+Frames por vídeo: 16
+Frame size: 224x224
+Normalização: ImageNet stats
+Device MTCNN: CPU

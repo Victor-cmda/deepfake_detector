@@ -1,0 +1,5 @@
+metric_type,dataset,epoch,loss,accuracy,precision,recall,f1,auc,samples
+Training,FaceForensics++ (Val),2.0,0.6329763531684875,,,,1.0,1.0,
+Cross-Dataset Evaluation,Celeb-DF-v2,,,0.5,0.0,0.0,0.0,0.5,10.0
+Cross-Dataset Evaluation,FaceForensics++,,,0.5,0.0,0.0,0.0,0.5,4.0
+Cross-Dataset Evaluation,WildDeepfake,,,0.5,0.0,0.0,0.0,0.5,10.0

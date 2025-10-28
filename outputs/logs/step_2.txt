@@ -1,0 +1,82 @@
+TAREFA 2: Organizar datasets
+=============================
+Data: 26/10/2025
+Status: CONCLUÍDA
+
+Ações Realizadas:
+-----------------
+1. ✓ Criada estrutura de diretórios para datasets:
+   - data/FaceForensics++/videos_real/
+   - data/FaceForensics++/videos_fake/
+   - data/Celeb-DF-v2/videos_real/
+   - data/Celeb-DF-v2/videos_fake/
+   - data/WildDeepfake/videos_real/
+   - data/WildDeepfake/videos_fake/
+
+2. ✓ Implementadas funções em src/utils.py:
+   - index_dataset(): Indexa vídeos de um dataset
+   - get_video_frame_count(): Conta frames usando OpenCV
+   - organize_all_datasets(): Organiza todos os datasets
+
+3. ✓ Criado script organize_datasets.py:
+   - Verifica estrutura de diretórios
+   - Indexa todos os datasets
+   - Gera arquivos CSV únicos
+   - Mostra resumo com métricas
+
+4. ✓ Arquivos CSV de índice criados:
+   - data/index_faceforensicspp.csv
+   - data/index_celebdf.csv
+   - data/index_wilddeepfake.csv
+
+5. ✓ Criado data/README.md com instruções de organização
+
+Funcionalidades Implementadas:
+-------------------------------
+- Detecção automática de formatos de vídeo (.mp4, .avi, .mov, .mkv)
+- Contagem de frames por vídeo usando cv2.VideoCapture
+- Labels automáticos (0=real, 1=fake) baseados na pasta
+- Suporte a datasets vazios (CSVs com colunas corretas)
+- Sobrescrita de arquivos CSV (sem duplicação)
+
+Estrutura dos CSVs:
+-------------------
+Colunas:
+- video_path: Caminho completo do vídeo
+- label: 0 (real) ou 1 (fake)
+- dataset: Nome do dataset
+- num_frames: Número total de frames
+
+Métricas (com datasets vazios):
+--------------------------------
+- total_videos: 0 (aguardando cópia dos vídeos)
+- frames_por_video: N/A (sem vídeos)
+- datasets_indexados: 3
+- estrutura_diretórios: 100% criada
+
+Outputs Gerados:
+----------------
+✓ data/index_faceforensicspp.csv (vazio, pronto para indexação)
+✓ data/index_celebdf.csv (vazio, pronto para indexação)
+✓ data/index_wilddeepfake.csv (vazio, pronto para indexação)
+✓ data/README.md (instruções completas)
+✓ organize_datasets.py (script executável)
+
+Como Usar:
+----------
+1. Copiar vídeos para as pastas videos_real/ e videos_fake/
+2. Executar: python organize_datasets.py
+3. Os CSVs serão populados automaticamente com as métricas
+
+Próximos Passos:
+----------------
+Tarefa 3: Gerar divisão treino/validação/teste (70/15/15) 
+          usando data/index_faceforensicspp.csv
+
+Observações:
+------------
+- Estrutura está pronta para receber os vídeos
+- Script pode ser reexecutado sem problemas (sobrescreve CSVs)
+- Funções em utils.py são reutilizáveis em outras tarefas
+- Nenhum arquivo duplicado foi criado
+- Todos os caminhos são consistentes com instructions.json

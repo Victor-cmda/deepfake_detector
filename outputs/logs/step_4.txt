@@ -1,0 +1,158 @@
+TAREFA 4: Implementar pré-processamento
+========================================
+Data: 28/10/2025
+Status: CONCLUÍDA
+
+Ações Realizadas:
+-----------------
+1. ✓ Editado src/preprocessing.py com funções completas:
+   - extract_frames(): Extração uniforme de frames de vídeos
+   - detect_and_crop_face(): Detecção facial com MTCNN e recorte
+   - preprocess_video(): Pipeline completo de pré-processamento
+   - visualize_preprocessing(): Visualização de resultados
+   - batch_preprocess_videos(): Processamento em lote
+   - create_preprocessing_report(): Geração de relatórios
+
+2. ✓ Criado test_preprocessing.py:
+   - Teste de vídeo único
+   - Teste de processamento em lote
+   - Pipeline completo de validação
+
+3. ✓ Criado create_preprocessing_viz.py:
+   - Visualizações comparativas (real vs fake)
+   - Exemplos de pré-processamento
+
+Funcionalidades Implementadas:
+-------------------------------
+
+1. EXTRAÇÃO DE FRAMES:
+   - Extração uniforme de N frames por vídeo (padrão: 16)
+   - Espaçamento proporcional ao total de frames
+   - Redimensionamento para 224x224 pixels
+   - Conversão BGR → RGB
+   - Tratamento de vídeos com poucos frames (replicação)
+
+2. DETECÇÃO FACIAL (MTCNN):
+   - Detecção de faces em cada frame
+   - Recorte com margem configurável
+   - Fallback para frame completo se não detectar face
+   - Redimensionamento para tamanho padrão
+   - Uso de CPU para compatibilidade (issue com MPS)
+
+3. NORMALIZAÇÃO:
+   - Conversão para tensores PyTorch
+   - Normalização [0, 255] → [0, 1]
+   - Aplicação de ImageNet stats (mean, std)
+   - Output: tensor (T, C, H, W) onde T=16, C=3, H=W=224
+
+4. VISUALIZAÇÃO:
+   - Geração de grids de frames processados
+   - Comparação side-by-side (real vs fake)
+   - Salvamento em alta resolução (150 DPI)
+   - Títulos e labels informativos
+
+5. PROCESSAMENTO EM LOTE:
+   - Suporte a múltiplos vídeos
+   - Barra de progresso (tqdm)
+   - Coleta de estatísticas
+   - Geração de relatórios
+
+Configurações Globais:
+----------------------
+- FRAME_SIZE = 224 pixels
+- FRAMES_PER_VIDEO = 16 frames
+- Device MTCNN = CPU (compatibilidade)
+- Normalização = ImageNet stats
+
+Métricas Alcançadas (conforme instructions.json):
+--------------------------------------------------
+
+Taxa de Detecção Facial:
+  - Média: 100.0%
+  - Mínima: 100.0%
+  - Máxima: 100.0%
+  - Total de vídeos testados: 4
+
+Tempo de Processamento:
+  - Tempo total: 0.26s (4 vídeos)
+  - Tempo médio por vídeo: 0.06s
+  - Taxa de processamento: ~15 vídeos/segundo
+
+Outputs Gerados:
+----------------
+✓ outputs/logs/preprocessing_stats.txt (estatísticas detalhadas)
+✓ outputs/figures/preprocessing_example.png (exemplo único)
+✓ outputs/figures/preprocessing_comparison.png (comparação real vs fake)
+
+Estrutura de Tensores:
+----------------------
+Input: Vídeo (qualquer formato: mp4, avi, mov, mkv)
+Output: torch.Tensor
+  - Shape: (16, 3, 224, 224)
+  - Dimensões: (Tempo, Canais, Altura, Largura)
+  - Tipo: torch.float32
+  - Range: Normalizado com ImageNet stats
+  - Device: CPU (pode ser movido para GPU depois)
+
+Pipeline de Processamento:
+--------------------------
+1. Ler vídeo com OpenCV
+2. Extrair 16 frames uniformemente espaçados
+3. Converter BGR → RGB
+4. Redimensionar para 224x224
+5. Detectar face com MTCNN em cada frame
+6. Recortar região facial (ou usar frame completo)
+7. Converter para tensor PyTorch
+8. Normalizar com ImageNet stats
+9. Empilhar frames: (T, C, H, W)
+
+Testes Realizados:
+------------------
+✓ Teste de vídeo único (1 vídeo real)
+  - 16 frames extraídos
+  - Tensor shape: (16, 3, 224, 224) ✓
+  - Taxa detecção: 100% ✓
+  - Tempo: 0.08s ✓
+
+✓ Teste em lote (4 vídeos: 2 reais, 2 fakes)
+  - 4/4 processados com sucesso ✓
+  - 0 falhas ✓
+  - Taxa média de detecção: 100% ✓
+  - Tempo médio: 0.06s/vídeo ✓
+
+✓ Visualizações geradas:
+  - Grid 2x4 (8 frames de 1 vídeo) ✓
+  - Comparação 2x8 (real vs fake) ✓
+
+Tratamento de Erros:
+--------------------
+- Vídeos não encontrados: retorna None
+- Vídeos vazios: retorna None
+- Frames insuficientes: replica último frame
+- Face não detectada: usa frame completo
+- Erros de leitura: logados e ignorados
+
+Compatibilidade:
+----------------
+- ✓ CPU
+- ✓ CUDA (GPU NVIDIA)
+- ✓ MPS (Apple Silicon) - apenas para tensores finais, MTCNN usa CPU
+
+Próximos Passos:
+----------------
+Tarefa 5: Implementar modelo CNN-LSTM em src/model.py
+  - ResNet-34 como extrator de features
+  - BiLSTM (256x2) para modelagem temporal
+  - Camada sigmoide para classificação binária
+
+Observações:
+------------
+- Funções modulares e reutilizáveis ✓
+- Documentação completa com docstrings ✓
+- Tratamento robusto de erros ✓
+- Compatibilidade multi-device ✓
+- Métricas detalhadas coletadas ✓
+- Visualizações informativas ✓
+- Nenhum arquivo duplicado criado ✓
+- Apenas src/preprocessing.py editado (conforme regras) ✓
+- Pronto para integração com Dataset (Tarefa 6) ✓

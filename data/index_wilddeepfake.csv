@@ -1,0 +1,11 @@
+video_path,label,dataset,num_frames
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_real/wild_real_003.mp4,0,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_real/wild_real_002.mp4,0,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_real/wild_real_000.mp4,0,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_real/wild_real_001.mp4,0,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_real/wild_real_004.mp4,0,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_fake/wild_fake_003.mp4,1,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_fake/wild_fake_002.mp4,1,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_fake/wild_fake_000.mp4,1,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_fake/wild_fake_001.mp4,1,WildDeepfake,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/WildDeepfake/videos_fake/wild_fake_004.mp4,1,WildDeepfake,60

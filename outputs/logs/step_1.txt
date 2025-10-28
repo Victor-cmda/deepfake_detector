@@ -1,0 +1,60 @@
+TAREFA 1: Configurar ambiente e estrutura
+==========================================
+Data: 26/10/2025
+Status: CONCLUÍDA
+
+Ações Realizadas:
+-----------------
+1. ✓ Criada estrutura de diretórios:
+   - data/
+   - models/
+   - outputs/figures/
+   - outputs/heatmaps/
+   - outputs/logs/
+   - outputs/reports/
+   - src/
+
+2. ✓ Criados arquivos fonte em src/:
+   - preprocessing.py (esqueleto)
+   - model.py (esqueleto)
+   - gradcam.py (esqueleto)
+   - train.py (esqueleto)
+   - evaluate.py (esqueleto)
+   - interface.py (esqueleto)
+   - utils.py (IMPLEMENTADO com seed global)
+
+3. ✓ Criados arquivos na raiz:
+   - main.py (script principal)
+   - requirements.txt (COMPLETO com todas as dependências)
+   - README.md (estrutura básica)
+
+Implementações:
+---------------
+- src/utils.py:
+  * set_global_seed(seed=42): Configura reprodutibilidade
+  * get_device(): Detecta GPU/MPS/CPU
+  * ensure_dir(directory): Cria diretórios
+
+- requirements.txt inclui:
+  * PyTorch >= 2.2.0
+  * OpenCV, MTCNN (facenet-pytorch)
+  * Pandas, NumPy, scikit-learn
+  * Matplotlib, Seaborn, Gradio
+  * Grad-CAM, ReportLab
+
+Outputs:
+--------
+- Estrutura de diretórios única: ✓
+- requirements.txt completo: ✓
+- Seed global configurada: ✓
+
+Próximos Passos:
+----------------
+Tarefa 2: Organizar datasets em data/ com subpastas videos_real e videos_fake
+
+Observações:
+------------
+- Erros de importação são esperados (pacotes ainda não instalados)
+- Todos os arquivos fonte foram criados com esqueletos documentados
+- Nenhum arquivo duplicado foi gerado
+- Estrutura consistente com instructions.json

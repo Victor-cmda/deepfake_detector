@@ -1,0 +1,11 @@
+video_path,label,dataset,num_frames
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_real/celeb_real_002.mp4,0,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_real/celeb_real_003.mp4,0,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_real/celeb_real_001.mp4,0,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_real/celeb_real_000.mp4,0,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_real/celeb_real_004.mp4,0,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_fake/celeb_fake_002.mp4,1,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_fake/celeb_fake_003.mp4,1,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_fake/celeb_fake_001.mp4,1,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_fake/celeb_fake_000.mp4,1,Celeb-DF-v2,60
+/Users/victurugu/Documents/GitHub/deepfake_detector/data/Celeb-DF-v2/videos_fake/celeb_fake_004.mp4,1,Celeb-DF-v2,60

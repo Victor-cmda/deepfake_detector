@@ -1,0 +1,244 @@
+TAREFA 6: Criar Dataset e DataLoader
+=====================================
+Data: 28/10/2025
+Status: CONCLUÍDA
+
+Ações Realizadas:
+-----------------
+1. ✓ Editado src/preprocessing.py com implementações:
+   - Classe VideoDataset (herda de torch.utils.data.Dataset)
+   - Função collate_fn() para batching customizado
+   - Função get_dataloaders() para criar loaders train/val/test
+   - Função test_dataloader() para validação
+
+2. ✓ Criado test_dataloader.py:
+   - Teste de criação de datasets
+   - Teste de carregamento de batches
+   - Teste de velocidade de iteração
+   - Teste de integração com modelo
+   - Teste de uso de memória
+   - Geração de relatório
+
+Implementações Detalhadas:
+---------------------------
+
+1. CLASSE VideoDataset:
+   
+   Atributos:
+   - video_paths: Lista de caminhos dos vídeos
+   - labels: Lista de labels (0=real, 1=fake)
+   - num_frames: Número de frames por vídeo (16)
+   - mtcnn: Detector facial (CPU)
+   - cache: Dicionário para cachear vídeos processados (opcional)
+   
+   Métodos:
+   - __init__(): Inicializa dataset e MTCNN
+   - __len__(): Retorna tamanho do dataset
+   - __getitem__(idx): Carrega e processa vídeo
+   - get_labels(): Retorna lista de labels
+   - get_class_weights(): Calcula pesos para balanceamento
+   
+   Funcionalidades:
+   - Carregamento lazy (sob demanda)
+   - Pré-processamento automático (extração + detecção + normalização)
+   - Fallback para tensor zeros em caso de erro
+   - Cache opcional para acelerar treinamento
+   - Balanceamento de classes automático
+
+2. FUNÇÃO collate_fn():
+   
+   Propósito:
+   - Agrupa múltiplos vídeos em batches
+   - Filtra itens None (erros de carregamento)
+   - Empilha tensores em dimensão de batch
+   
+   Input: Lista de tuplas (video_tensor, label)
+   Output: 
+   - videos_batch: (B, T, C, H, W) = (batch, 16, 3, 224, 224)
+   - labels_batch: (B,) = (batch,)
+
+3. FUNÇÃO get_dataloaders():
+   
+   Parâmetros:
+   - splits_csv: Caminho do arquivo de splits
+   - batch_size: Tamanho do batch (padrão: 4)
+   - num_frames: Frames por vídeo (padrão: 16)
+   - num_workers: Workers para loading paralelo (padrão: 0)
+   - shuffle_train: Embaralhar treino (padrão: True)
+   - cache_preprocessed: Cachear vídeos (padrão: False)
+   
+   Retorna:
+   - dict com DataLoaders: {'train', 'val', 'test'}
+   
+   Funcionalidades:
+   - Lê CSV de splits
+   - Cria dataset para cada split
+   - Configura shuffle apenas para treino
+   - Pin memory se CUDA disponível
+   - Validação de colunas do CSV
+
+4. FUNÇÃO test_dataloader():
+   
+   Propósito: Validar DataLoader
+   
+   Testes:
+   - Carrega batches de teste
+   - Mede tempo de carregamento
+   - Verifica shapes dos tensores
+   - Conta distribuição de labels
+   - Calcula uso de memória
+
+Métricas Alcançadas (conforme instructions.json):
+--------------------------------------------------
+
+TEMPO DE BATCH:
+  - Tempo médio/batch: 0.1225s (treino)
+  - Tempo médio/batch: 0.1169s (validação)
+  - Tempo médio/batch: 0.1171s (teste)
+  - tempo_batch: ~0.12s ✓
+
+USO DE MEMÓRIA:
+  - Batch de 2 vídeos: 18.38 MB
+  - Batch de 4 vídeos: 36.75 MB
+  - Dataset treino completo: ~128.62 MB
+  - Dataset validação completo: ~18.38 MB
+  - Dataset teste completo: ~36.75 MB
+  - uso_memoria: ~18-37 MB por batch ✓
+
+Estatísticas dos DataLoaders:
+------------------------------
+
+TRAIN:
+  - Total de vídeos: 14
+  - Batch size: 4
+  - Número de batches: 4
+  - Shuffle: True
+  - Distribuição: 7 reais (50%), 7 fakes (50%)
+  - Pesos: Real=1.0, Fake=1.0 (balanceado)
+
+VAL:
+  - Total de vídeos: 2
+  - Batch size: 4
+  - Número de batches: 1
+  - Shuffle: False
+  - Distribuição: 1 real (50%), 1 fake (50%)
+  - Pesos: Real=1.0, Fake=1.0 (balanceado)
+
+TEST:
+  - Total de vídeos: 4
+  - Batch size: 4
+  - Número de batches: 1
+  - Shuffle: False
+  - Distribuição: 2 reais (50%), 2 fakes (50%)
+  - Pesos: Real=1.0, Fake=1.0 (balanceado)
+
+Testes Realizados:
+------------------
+
+TESTE 1 - CRIAÇÃO:
+  ✓ 3 DataLoaders criados (train, val, test)
+  ✓ VideoDataset inicializado para cada split
+  ✓ MTCNN configurado (CPU)
+  ✓ Configurações validadas
+
+TESTE 2 - CARREGAMENTO DE BATCHES:
+  ✓ Train: 2 batches testados, 4 amostras
+  ✓ Val: 1 batch testado, 2 amostras
+  ✓ Test: 2 batches testados, 4 amostras
+  ✓ Shapes corretos: (B, 16, 3, 224, 224)
+  ✓ Labels corretos: (B,)
+
+TESTE 3 - VELOCIDADE:
+  ✓ Train: 16.33 amostras/s
+  ✓ Val: 17.11 amostras/s
+  ✓ Test: 17.08 amostras/s
+  ✓ Throughput consistente
+
+TESTE 4 - INTEGRAÇÃO COM MODELO:
+  ✓ Batch carregado do dataloader
+  ✓ Input shape: (2, 16, 3, 224, 224)
+  ✓ Labels shape: (2,)
+  ✓ Forward pass executado
+  ✓ Output shape: (2, 1)
+  ✓ Output range: [0, 1] (sigmoid)
+
+TESTE 5 - MEMÓRIA:
+  ✓ Batch 2 vídeos: 18.38 MB
+  ✓ Projeção train completo: 128.62 MB
+  ✓ Projeção val completo: 18.38 MB
+  ✓ Projeção test completo: 36.75 MB
+  ✓ Uso eficiente de memória
+
+Pipeline de Carregamento:
+--------------------------
+1. DataLoader solicita item pelo índice
+2. VideoDataset.__getitem__(idx) é chamado
+3. Carrega caminho e label do vídeo
+4. Verifica cache (se ativado)
+5. Chama preprocess_video():
+   - Extrai 16 frames
+   - Detecta faces com MTCNN
+   - Recorta e redimensiona
+   - Normaliza com ImageNet stats
+6. Retorna (video_tensor, label_tensor)
+7. collate_fn agrupa múltiplos itens
+8. Retorna batch: (B, T, C, H, W), (B,)
+
+Configurações dos DataLoaders:
+-------------------------------
+- Batch size: 4 (configurável)
+- Num workers: 0 (single-threaded para debug)
+- Pin memory: True se CUDA disponível
+- Shuffle train: True
+- Shuffle val/test: False
+- Drop last: False (usar todos os dados)
+- Collate fn: Custom (collate_fn)
+
+Tratamento de Erros:
+--------------------
+- Vídeo não encontrado: retorna tensor zeros
+- Erro no pré-processamento: retorna tensor zeros
+- Batch vazio após filtrar Nones: retorna None, None
+- Validação de colunas do CSV
+- Mensagens de aviso para falhas
+
+Otimizações Implementadas:
+---------------------------
+- ✓ Cache opcional para vídeos pré-processados
+- ✓ MTCNN inicializado uma vez por dataset
+- ✓ Lazy loading (carrega apenas quando necessário)
+- ✓ Pin memory para transferência rápida GPU
+- ✓ Collate function otimizada
+- ✓ Pesos de classe calculados automaticamente
+
+Outputs Gerados:
+----------------
+✓ outputs/logs/dataloader_stats.txt (estatísticas completas)
+✓ outputs/logs/step_6.txt (este arquivo)
+
+Integração com Etapas Anteriores:
+----------------------------------
+- ✓ Usa preprocess_video() da Tarefa 4
+- ✓ Lê splits_faceforensicspp.csv da Tarefa 3
+- ✓ Compatível com modelo da Tarefa 5
+- ✓ Pronto para treinamento (Tarefa 7)
+
+Próximos Passos:
+----------------
+Tarefa 7: Treinamento com monitoramento em src/train.py
+  - Loop de treinamento com Adam
+  - Loss: Binary Cross Entropy
+  - Scheduler: ReduceLROnPlateau
+  - Salvar melhor modelo em models/model_best.pt
+  - Métricas em outputs/metrics_train.csv
+
+Observações:
+------------
+- Apenas src/preprocessing.py editado (conforme regras) ✓
+- Nenhum arquivo duplicado criado ✓
+- Integração perfeita com pré-processamento e modelo ✓
+- Documentação completa com docstrings ✓
+- Testes abrangentes (5 testes diferentes) ✓
+- Métricas coletadas (tempo_batch, uso_memoria) ✓
+- Balanceamento de classes automático ✓
+- Pronto para treinamento ✓

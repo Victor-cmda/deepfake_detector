@@ -1,0 +1,251 @@
+TAREFA 8: Implementar Early Stopping
+=====================================
+Data: 28/10/2025
+Status: CONCLUÍDA (implementada junto com Tarefa 7)
+
+Ações Realizadas:
+-----------------
+1. ✓ Early stopping implementado em src/train.py (função train_model)
+2. ✓ Paciência configurada: 5 épocas (conforme instructions.json)
+3. ✓ Métrica de monitoramento: Val F1-score
+4. ✓ Log de early stopping salvo em outputs/logs/early_stopping.txt
+
+Implementação Detalhada:
+-------------------------
+
+1. VARIÁVEIS DE CONTROLE:
+   
+   No início do treinamento:
+   - best_val_f1 = 0.0 (melhor F1 de validação)
+   - best_epoch = 0 (época do melhor modelo)
+   - epochs_no_improve = 0 (contador de épocas sem melhoria)
+   
+   Variável de configuração:
+   - patience = 5 (número de épocas sem melhoria antes de parar)
+
+2. LÓGICA DE MONITORAMENTO:
+   
+   A cada época de validação:
+   
+   ```python
+   if val_f1 > best_val_f1:
+       # Melhorou!
+       best_val_f1 = val_f1
+       best_epoch = epoch
+       epochs_no_improve = 0
+       save_model(model, model_save_path)
+   else:
+       # Não melhorou
+       epochs_no_improve += 1
+   ```
+
+3. CRITÉRIO DE PARADA:
+   
+   ```python
+   if epochs_no_improve >= patience:
+       print("EARLY STOPPING ATIVADO")
+       break  # Para o loop de treinamento
+   ```
+
+4. LOG DE EARLY STOPPING:
+   
+   Conteúdo do arquivo outputs/logs/early_stopping.txt:
+   
+   - Melhor época (epoch_melhor_val_f1)
+   - Melhor Val F1
+   - Paciência configurada
+   - Épocas sem melhoria
+   - Total de épocas executadas
+   - Tempo total de treinamento
+   - Caminho do modelo salvo
+   - Caminho das métricas salvas
+
+Exemplo de Execução (Teste com Paciência 5 - Conforme Tarefa 8):
+----------------------------------------------------------------
+
+CONFIGURAÇÃO:
+  - Paciência: 5 (conforme instructions.json)
+  - Métrica: Val F1
+  - Épocas máximas: 20
+  - Batch size: 4
+
+HISTÓRICO:
+  Época 1: F1 = 0.0000 → Sem melhoria (1/5)
+  Época 2: F1 = 1.0000 → MELHOR! (salva modelo, reseta contador)
+  Época 3: F1 = 1.0000 → Sem melhoria (1/5) [mesmo valor]
+  Época 4: F1 = 1.0000 → Sem melhoria (2/5) [mesmo valor]
+  Época 5: F1 = 1.0000 → Sem melhoria (3/5) [mesmo valor]
+  Época 6: F1 = 1.0000 → Sem melhoria (4/5) [mesmo valor]
+  Época 7: F1 = 1.0000 → Sem melhoria (5/5) [mesmo valor]
+  
+  EARLY STOPPING ATIVADO na época 7!
+  Total de épocas: 7 (ao invés de 20)
+
+RESULTADO:
+  - Modelo final: Época 2 (F1 = 1.0000, AUC = 1.0000)
+  - Economia: 13 épocas não executadas
+  - Tempo: 0.49 min (ao invés de ~1.4 min)
+  - Val Loss mínimo: 0.5477 (época 5)
+
+Conteúdo do Log Gerado (Teste Final com Paciência 5):
+------------------------------------------------------
+
+```
+EARLY STOPPING LOG
+============================================================
+
+Melhor época: 2
+Melhor Val F1: 1.0000
+Paciência configurada: 5
+Épocas sem melhoria: 5
+Total de épocas executadas: 7
+Tempo total de treinamento: 0.49 min
+
+Modelo salvo em: models/model_best.pt
+Métricas salvas em: outputs/metrics_train.csv
+```
+
+Métricas Validadas (conforme instructions.json):
+-------------------------------------------------
+✅ epoch_melhor_val_f1: 2 (época com melhor F1)
+
+Teste Final (Paciência 5 - Conforme Tarefa 8):
+-----------------------------------------------
+- Total de épocas: 7 (parou por early stopping)
+- Melhor época: 2
+- Melhor Val F1: 1.0000
+- Melhor Val AUC: 1.0000
+- Val Loss mínimo: 0.5477 (época 5)
+- Tempo total: 0.49 min
+- Economia: 13 épocas (65% de economia)
+
+Vantagens do Early Stopping:
+-----------------------------
+
+1. PREVINE OVERFITTING:
+   - Para antes do modelo decorar os dados
+   - Mantém melhor generalização
+   
+2. ECONOMIZA TEMPO:
+   - Não executa épocas desnecessárias
+   - Para quando não há mais progresso
+   
+3. SALVA MELHOR MODELO:
+   - Sempre mantém o modelo da melhor época
+   - Não precisa escolher manualmente
+   
+4. OTIMIZA RECURSOS:
+   - GPU/CPU não ficam ociosos
+   - Energia economizada
+   
+5. FACILITA EXPERIMENTAÇÃO:
+   - Pode configurar num_epochs alto
+   - Early stopping cuida da parada ideal
+
+Comportamento com Paciência 5:
+--------------------------------
+
+Cenário 1 - Para na época 10:
+  Épocas 1-5: Melhorias contínuas
+  Época 6: Sem melhoria (1/5)
+  Época 7: Sem melhoria (2/5)
+  Época 8: Sem melhoria (3/5)
+  Época 9: Sem melhoria (4/5)
+  Época 10: Sem melhoria (5/5) → PARA!
+  
+Cenário 2 - Continua treinando:
+  Épocas 1-5: Melhorias contínuas
+  Época 6: Sem melhoria (1/5)
+  Época 7: Sem melhoria (2/5)
+  Época 8: MELHORIA! → Reseta contador
+  Épocas 9-13: Continua normalmente
+
+Cenário 3 - Atinge num_epochs:
+  Épocas 1-20: Melhorias periódicas
+  Época 20: Fim do limite → PARA!
+  (early stopping não ativado)
+
+Integração com Scheduler:
+--------------------------
+
+O early stopping trabalha em conjunto com ReduceLROnPlateau:
+
+1. Scheduler monitora: val_loss (paciência: 3)
+2. Early stopping monitora: val_f1 (paciência: 5)
+
+Possibilidades:
+- LR reduz mas modelo continua melhorando F1
+- LR reduz múltiplas vezes antes de early stopping
+- Early stopping pode ativar antes do LR reduzir muito
+
+Exemplo:
+  Época 1-3: LR = 1e-4, melhorias
+  Época 4-6: LR = 1e-4, val_loss estável
+  Época 7: LR → 5e-5 (scheduler ativa)
+  Época 7-11: LR = 5e-5, F1 não melhora
+  Época 11: Early stopping ativa!
+
+Outputs Validados:
+------------------
+✓ outputs/logs/early_stopping.txt criado
+✓ Conteúdo completo e formatado
+✓ Métricas corretas
+✓ Caminhos dos arquivos salvos
+✓ Sobrescreve execuções anteriores
+
+Código-Fonte (Trecho Relevante):
+---------------------------------
+
+```python
+# Variáveis para early stopping
+best_val_f1 = 0.0
+best_epoch = 0
+epochs_no_improve = 0
+
+for epoch in range(1, num_epochs + 1):
+    # ... treinar e validar ...
+    
+    # Verificar se é o melhor modelo
+    if val_f1 > best_val_f1:
+        best_val_f1 = val_f1
+        best_epoch = epoch
+        epochs_no_improve = 0
+        save_model(model, model_save_path)
+    else:
+        epochs_no_improve += 1
+    
+    # Early stopping
+    if epochs_no_improve >= patience:
+        print("EARLY STOPPING ATIVADO")
+        break
+
+# Salvar log
+with open(early_stopping_log, 'w') as f:
+    f.write("EARLY STOPPING LOG\\n")
+    f.write("=" * 60 + "\\n\\n")
+    f.write(f"Melhor época: {best_epoch}\\n")
+    f.write(f"Melhor Val F1: {best_val_f1:.4f}\\n")
+    f.write(f"Paciência configurada: {patience}\\n")
+    f.write(f"Épocas sem melhoria: {epochs_no_improve}\\n")
+    # ... mais informações ...
+```
+
+Validação dos Critérios:
+-------------------------
+✓ Implementado no mesmo arquivo src/train.py
+✓ Paciência de 5 épocas (configurável)
+✓ Log em outputs/logs/early_stopping.txt
+✓ Métrica epoch_melhor_val_f1 disponível
+✓ Nenhum arquivo duplicado
+✓ Sobrescreve logs anteriores
+✓ Integrado com salvamento do modelo
+✓ Funciona com scheduler
+
+Observações:
+------------
+- Tarefa 8 implementada junto com Tarefa 7 por eficiência
+- Early stopping é parte integral do loop de treinamento
+- Não faz sentido separar em duas implementações
+- Código mais limpo e manutenível
+- Todas as especificações atendidas
+- Pronto para Tarefa 9 (avaliação cross-dataset)

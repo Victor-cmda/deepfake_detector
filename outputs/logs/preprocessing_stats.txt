@@ -1,0 +1,14 @@
+============================================================
+RELATÓRIO DE PRÉ-PROCESSAMENTO
+============================================================
+
+Total de vídeos: 4
+Processados com sucesso: 4
+Falhas: 0
+
+Tempo total: 0.26s
+Tempo médio por vídeo: 0.06s
+
+Taxa de detecção facial média: 100.0%
+Taxa mínima: 100.0%
+Taxa máxima: 100.0%

@@ -1,0 +1,364 @@
+TAREFA 7: Treinamento com Monitoramento
+=========================================
+Data: 28/10/2025
+Status: CONCLUÍDA
+
+Ações Realizadas:
+-----------------
+1. ✓ Editado src/train.py com implementação completa de:
+   - Função train_epoch() para treinamento por época
+   - Função validate_epoch() para validação e métricas
+   - Função train_model() com loop de treinamento completo
+   - Função test_training() para validação
+
+2. ✓ Configurações implementadas conforme instructions.json:
+   - Otimizador: Adam
+   - Loss: Binary Cross-Entropy (BCELoss)
+   - Scheduler: ReduceLROnPlateau
+   - Early stopping: paciência 5 (implementado na Tarefa 7 e 8 juntas)
+
+3. ✓ Outputs gerados automaticamente:
+   - models/model_best.pt (melhor modelo)
+   - outputs/metrics_train.csv (histórico de métricas)
+   - outputs/logs/early_stopping.txt (log de early stopping)
+
+Implementações Detalhadas:
+---------------------------
+
+1. FUNÇÃO train_epoch():
+   
+   Funcionalidades:
+   - Loop de treinamento por época
+   - Move dados para device (CPU/CUDA/MPS)
+   - Zero gradientes antes do forward
+   - Calcula loss com BCELoss
+   - Backward pass e atualização de pesos
+   - Barra de progresso com tqdm
+   
+   Input: model, dataloader, criterion, optimizer, device
+   Output: avg_loss (perda média da época)
+   
+   Características:
+   - Labels convertidos para float e unsqueeze(1)
+   - Acumulação de loss por batch
+   - Média calculada sobre todos os batches
+
+2. FUNÇÃO validate_epoch():
+   
+   Funcionalidades:
+   - Loop de validação sem gradientes
+   - Calcula loss de validação
+   - Coleta predições e probabilidades
+   - Calcula F1-score
+   - Calcula AUC-ROC
+   
+   Input: model, dataloader, criterion, device
+   Output: avg_loss, f1, auc, all_preds, all_labels
+   
+   Características:
+   - Threshold 0.5 para classificação binária
+   - Verifica existência de ambas as classes para AUC
+   - Retorna 0.0 se AUC não puder ser calculado
+   - zero_division=0 no F1 para evitar warnings
+
+3. FUNÇÃO train_model():
+   
+   Parâmetros configuráveis:
+   - splits_csv: Arquivo de splits (default: data/splits_faceforensicspp.csv)
+   - batch_size: Tamanho do batch (default: 4)
+   - num_frames: Frames por vídeo (default: 16)
+   - num_epochs: Máximo de épocas (default: 20)
+   - learning_rate: Taxa inicial (default: 1e-4)
+   - patience: Paciência early stopping (default: 5)
+   - model_save_path: Caminho do modelo (default: models/model_best.pt)
+   - metrics_save_path: Caminho das métricas (default: outputs/metrics_train.csv)
+   - early_stopping_log: Log do early stopping (default: outputs/logs/early_stopping.txt)
+   - device: Dispositivo (default: None = auto-detect)
+   - num_workers: Workers para DataLoader (default: 0)
+   
+   Workflow:
+   1. Configurar seed global (42)
+   2. Detectar device automático
+   3. Criar diretórios de output
+   4. Carregar DataLoaders (train/val/test)
+   5. Criar modelo e mover para device
+   6. Configurar otimizador Adam
+   7. Configurar scheduler ReduceLROnPlateau
+   8. Loop de épocas:
+      - Treinar época
+      - Validar época
+      - Atualizar scheduler com val_loss
+      - Salvar métricas no histórico
+      - Verificar melhor F1
+      - Salvar melhor modelo
+      - Verificar early stopping
+   9. Salvar CSV de métricas
+   10. Salvar log de early stopping
+   11. Retornar modelo e histórico
+
+4. OTIMIZADOR ADAM:
+   
+   Configuração:
+   - Tipo: torch.optim.Adam
+   - Learning rate: 1e-4
+   - Parâmetros: model.parameters()
+   - Betas: (0.9, 0.999) - padrão
+   - Epsilon: 1e-8 - padrão
+   
+   Características:
+   - Adaptive learning rate
+   - Momentum com médias móveis
+   - Ideal para CNNs e RNNs
+
+5. LOSS FUNCTION (BCELoss):
+   
+   Configuração:
+   - Tipo: nn.BCELoss()
+   - Reduction: mean (padrão)
+   
+   Fórmula:
+   loss = -[y*log(p) + (1-y)*log(1-p)]
+   
+   Características:
+   - Binary Cross-Entropy
+   - Assume sigmoid já aplicado na saída
+   - Penaliza predições confiantes incorretas
+
+6. SCHEDULER (ReduceLROnPlateau):
+   
+   Configuração:
+   - Tipo: ReduceLROnPlateau
+   - Mode: 'min' (minimizar val_loss)
+   - Factor: 0.5 (reduz LR pela metade)
+   - Patience: 3 épocas sem melhoria
+   - Min LR: 1e-7
+   
+   Funcionamento:
+   - Monitora val_loss a cada época
+   - Se não melhora por 3 épocas consecutivas
+   - Reduz learning rate: LR = LR * 0.5
+   - Para quando atinge min_lr
+
+7. EARLY STOPPING:
+   
+   Configuração:
+   - Métrica: Val F1-score (maior é melhor)
+   - Paciência: 5 épocas (conforme tarefa 8)
+   - Salvar: Melhor modelo quando F1 melhora
+   
+   Variáveis rastreadas:
+   - best_val_f1: Melhor F1 até agora
+   - best_epoch: Época do melhor modelo
+   - epochs_no_improve: Épocas sem melhoria
+   
+   Ação:
+   - Se epochs_no_improve >= patience: PARA
+   - Modelo final é o da melhor época
+
+8. HISTÓRICO DE MÉTRICAS:
+   
+   Colunas no CSV:
+   - epoch: Número da época
+   - train_loss: Perda no treino
+   - val_loss: Perda na validação
+   - val_f1: F1-score na validação
+   - val_auc: AUC-ROC na validação
+   - learning_rate: Taxa de aprendizado atual
+   
+   Formato: CSV com header
+   Sobrescreve: Sim (conforme regras)
+
+Métricas Alcançadas (Teste com 5 épocas):
+------------------------------------------
+
+ÉPOCA 1 (MELHOR):
+  - Train Loss: 0.8642
+  - Val Loss:   0.6700
+  - Val F1:     0.6667 ✓
+  - Val AUC:    1.0000 ✓
+  - LR:         1.00e-04
+  - Tempo:      7.62s
+  - STATUS: Modelo salvo!
+
+ÉPOCA 2:
+  - Train Loss: 0.7422
+  - Val Loss:   0.7491
+  - Val F1:     0.0000
+  - Val AUC:    0.0000
+  - LR:         1.00e-04
+  - Tempo:      3.55s
+  - STATUS: Sem melhoria (1)
+
+ÉPOCA 3:
+  - Train Loss: 0.8163
+  - Val Loss:   0.7187
+  - Val F1:     0.6667
+  - Val AUC:    0.0000
+  - LR:         1.00e-04
+  - Tempo:      3.54s
+  - STATUS: Sem melhoria (2)
+
+ÉPOCA 4:
+  - Train Loss: 0.7104
+  - Val Loss:   0.7169
+  - Val F1:     0.0000
+  - Val AUC:    0.0000
+  - LR:         1.00e-04
+  - Tempo:      3.51s
+  - STATUS: Sem melhoria (3)
+  - EARLY STOPPING ATIVADO!
+
+Resumo Final:
+-------------
+- Melhor época: 1
+- Melhor Val F1: 0.6667
+- Total de épocas: 4 (parado por early stopping)
+- Tempo total: 0.31 min (~18.6s)
+- Modelo salvo: models/model_best.pt (97.9 MB)
+
+Métricas Validadas (conforme instructions.json):
+-------------------------------------------------
+✓ train_loss: 0.8642 (época 1)
+✓ val_loss: 0.6700 (época 1)
+✓ val_f1: 0.6667 (época 1)
+✓ val_auc: 1.0000 (época 1)
+
+Outputs Gerados:
+----------------
+✓ models/model_best.pt
+  - Tamanho: 97,899,259 bytes (~98 MB)
+  - Contém: state_dict do modelo na melhor época
+  - Formato: PyTorch .pt
+  
+✓ outputs/metrics_train.csv
+  - Tamanho: 303 bytes
+  - Linhas: 5 (header + 4 épocas)
+  - Colunas: epoch, train_loss, val_loss, val_f1, val_auc, learning_rate
+  
+✓ outputs/logs/early_stopping.txt
+  - Tamanho: 324 bytes
+  - Contém: Informações sobre parada antecipada
+  - Melhor época, F1, paciência, tempo total
+
+Detalhes do Treinamento:
+-------------------------
+
+CONFIGURAÇÃO:
+  - Device: MPS (Apple Silicon)
+  - Batch size: 2 (teste)
+  - Learning rate: 0.0001
+  - Num epochs: 5 (máximo)
+  - Patience: 3 (teste rápido)
+  - Train batches: 7
+  - Val batches: 1
+
+DATASET:
+  - Train: 14 vídeos (7 reais, 7 fakes)
+  - Val: 2 vídeos (1 real, 1 fake)
+  - Test: 4 vídeos (2 reais, 2 fakes)
+  - Frames: 16 por vídeo
+  - Resolução: 224x224
+  - Normalização: ImageNet
+
+MODELO:
+  - Total parâmetros: 24,439,105
+  - Parâmetros treináveis: 24,439,105
+  - CNN: 21,284,672 (ResNet-34)
+  - LSTM: 3,153,920 (BiLSTM)
+  - FC: 513 (camadas finais)
+
+OTIMIZAÇÃO:
+  - Algoritmo: Adam
+  - LR inicial: 1e-4
+  - LR final: 1e-4 (não foi reduzido)
+  - Scheduler: ReduceLROnPlateau
+  - Factor: 0.5
+  - Patience (LR): 3
+  - Min LR: 1e-7
+
+EARLY STOPPING:
+  - Métrica: Val F1
+  - Paciência: 3 épocas (teste)
+  - Melhor F1: 0.6667
+  - Ativado na época 4
+
+Recursos Implementados:
+------------------------
+✓ Seed global fixa (42) para reprodutibilidade
+✓ Detecção automática de device (CPU/CUDA/MPS)
+✓ Criação automática de diretórios
+✓ Validação de existência do CSV de splits
+✓ Barras de progresso com tqdm
+✓ Logging detalhado de métricas
+✓ Salvamento automático do melhor modelo
+✓ Early stopping baseado em F1
+✓ Scheduler baseado em val_loss
+✓ Histórico completo em CSV
+✓ Log textual de early stopping
+✓ Função de teste integrada
+✓ Verificação de outputs gerados
+
+Observações Técnicas:
+---------------------
+1. Labels convertidos para float e unsqueeze(1):
+   - BCELoss espera shape (B, 1)
+   - Modelo retorna shape (B, 1)
+   
+2. AUC calculado apenas se ambas as classes presentes:
+   - Evita erro em validação pequena
+   - Retorna 0.0 se não puder calcular
+   
+3. Threshold 0.5 para classificação:
+   - Padrão para problemas binários
+   - Pode ser ajustado na avaliação
+   
+4. F1-score como métrica principal:
+   - Balanceia precision e recall
+   - Melhor que accuracy para dados balanceados
+   
+5. Scheduler monitora val_loss:
+   - Reduz LR quando validação estagna
+   - Ajuda a escapar de platôs
+   
+6. Early stopping monitora val_f1:
+   - Previne overfitting
+   - Salva computação
+
+Integração com Etapas Anteriores:
+----------------------------------
+✓ Usa get_dataloaders() da Tarefa 6
+✓ Usa create_model(), save_model() da Tarefa 5
+✓ Usa set_global_seed(), get_device() da Tarefa 1
+✓ Lê splits_faceforensicspp.csv da Tarefa 3
+✓ Usa VideoDataset com pré-processamento da Tarefa 4
+
+Próximos Passos:
+----------------
+✓ Tarefa 8 já implementada junto com Tarefa 7:
+  - Early stopping com paciência 5
+  - Log em outputs/logs/early_stopping.txt
+  
+Tarefa 9: Avaliação cross-dataset
+  - Avaliar em FaceForensics++, Celeb-DF-v2, WildDeepfake
+  - Gerar outputs/metrics_cross.csv
+  - Criar matrizes de confusão e curvas ROC
+  - Calcular accuracy, precision, recall, F1, AUC
+
+Observações de Implementação:
+------------------------------
+- Apenas src/train.py editado (conforme regras) ✓
+- Nenhum arquivo duplicado criado ✓
+- Outputs sobrescrevem arquivos anteriores ✓
+- Caminhos consistentes com estrutura definida ✓
+- Código documentado com docstrings ✓
+- Teste completo executado com sucesso ✓
+- Todas as métricas especificadas implementadas ✓
+- Early stopping implementado junto (Tarefa 7+8) ✓
+
+Validação dos Critérios de Aceitação:
+--------------------------------------
+✓ Nenhum arquivo duplicado criado
+✓ Caminhos consistentes com estrutura
+✓ Reexecutável sem gerar novos nomes
+✓ Logs e métricas sobrescritos
+✓ Executável com Python 3.11.5 e PyTorch >= 2.2

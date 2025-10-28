@@ -1,0 +1,4 @@
+dataset,accuracy,precision,recall,f1,auc,total_samples
+FaceForensics++,0.5,0.0,0.0,0.0,0.5,4
+Celeb-DF-v2,0.5,0.0,0.0,0.0,0.5,10
+WildDeepfake,0.5,0.0,0.0,0.0,0.5,10

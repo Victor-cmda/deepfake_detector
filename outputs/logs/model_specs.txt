@@ -1,0 +1,45 @@
+============================================================
+ESPECIFICAÇÕES DO MODELO DEEPFAKE DETECTOR
+============================================================
+
+ARQUITETURA:
+------------------------------------------------------------
+1. CNN (Extrator de Features Espaciais)
+   - Backbone: ResNet-34 (pré-treinado ImageNet)
+   - Output features: 512 dimensões
+   - Parâmetros: 21,284,672
+
+2. LSTM (Modelagem Temporal)
+   - Tipo: BiLSTM (Bidirectional)
+   - Camadas: 2
+   - Hidden units por direção: 256
+   - Total hidden: 512 (256 * 2)
+   - Dropout: 0.3
+   - Parâmetros: 3,153,920
+
+3. Classificador (Detecção Binária)
+   - Camada FC: 512 → 1
+   - Ativação: Sigmoid
+   - Dropout: 0.3
+   - Parâmetros: 513
+
+PARÂMETROS TOTAIS:
+------------------------------------------------------------
+Total: 24,439,105
+Treináveis: 24,439,105
+
+INPUT/OUTPUT:
+------------------------------------------------------------
+Input shape: (batch_size, 16, 3, 224, 224)
+  - 16 frames por vídeo
+  - 3 canais RGB
+  - 224x224 pixels
+
+Output shape: (batch_size, 1)
+  - Probabilidade de deepfake [0, 1]
+
+MÉTRICAS DE PERFORMANCE:
+------------------------------------------------------------
+Tempo de inferência (1 vídeo): 0.0063s
+Tempo de inferência (batch 8): 0.0049s
+Tempo por vídeo (batch 8): 0.0006s

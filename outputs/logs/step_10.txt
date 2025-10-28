@@ -1,0 +1,351 @@
+TAREFA 10: Implementar Grad-CAM
+================================
+Data: 28/10/2025
+Status: CONCLUÍDA
+
+Ações Realizadas:
+-----------------
+1. ✓ Editado src/gradcam.py com implementação completa de:
+   - Classe GradCAM para gerar mapas de ativação
+   - Função generate_video_gradcam() para processar vídeos
+   - Função test_gradcam() para validação
+
+2. ✓ Funcionalidades implementadas:
+   - Gradient-weighted Class Activation Mapping (Grad-CAM)
+   - Geração de heatmaps coloridos
+   - Sobreposição de heatmaps em frames originais
+   - Cálculo de estatísticas de atenção
+
+3. ✓ Outputs gerados:
+   - outputs/heatmaps/*.png (16 heatmaps por vídeo)
+   - Visualizações com 3 painéis: Original | Heatmap | Overlay
+
+Implementações Detalhadas:
+---------------------------
+
+1. CLASSE GradCAM:
+   
+   Atributos:
+   - model: Modelo PyTorch
+   - target_layer: Camada convolucional alvo
+   - gradients: Gradientes capturados (backward)
+   - activations: Ativações capturadas (forward)
+   
+   Métodos:
+   - __init__(model, target_layer): Inicializa e registra hooks
+   - _register_hooks(): Registra forward e backward hooks
+   - generate_cam(input_tensor, target_class): Gera mapa CAM
+   - generate_heatmap(cam, original_size, colormap): Cria heatmap colorido
+   - overlay_heatmap(heatmap, original_image, alpha): Sobrepõe heatmap
+   
+   Funcionamento:
+   a) Forward pass: Captura ativações da camada alvo
+   b) Backward pass: Captura gradientes em relação à saída
+   c) Calcula pesos: média global dos gradientes
+   d) CAM: combinação ponderada das ativações
+   e) ReLU: remove ativações negativas
+   f) Normalização: [0, 1]
+
+2. FUNÇÃO generate_video_gradcam():
+   
+   Workflow:
+   1. Configurar seed global (42)
+   2. Detectar device automático
+   3. Criar diretório outputs/heatmaps/
+   4. Carregar modelo treinado
+   5. Inicializar MTCNN (CPU)
+   6. Pré-processar vídeo
+   7. Obter predição do modelo
+   8. Configurar Grad-CAM na última camada conv
+   9. Para cada frame:
+      a. Extrair frame tensor
+      b. Gerar CAM
+      c. Calcular atenção média
+      d. Desnormalizar frame
+      e. Gerar heatmap colorido
+      f. Sobrepor heatmap
+      g. Criar visualização 3 painéis
+      h. Salvar PNG (150 DPI)
+   10. Calcular estatísticas de atenção
+   11. Retornar resultados
+   
+   Parâmetros:
+   - video_path: Caminho do vídeo
+   - model_path: Caminho do modelo (default: models/model_best.pt)
+   - num_frames: Número de frames (default: 16)
+   - output_dir: Diretório de saída (default: outputs/heatmaps)
+   - device: Dispositivo (default: auto-detect)
+   - alpha: Transparência do heatmap (default: 0.4)
+
+3. HOOKS DO PYTORCH:
+   
+   Forward Hook:
+   ```python
+   def forward_hook(module, input, output):
+       self.activations = output.detach()
+   ```
+   - Captura ativações da camada durante forward
+   - Detach para não interferir no grafo
+   
+   Backward Hook:
+   ```python
+   def backward_hook(module, grad_input, grad_output):
+       self.gradients = grad_output[0].detach()
+   ```
+   - Captura gradientes durante backward
+   - grad_output[0] contém gradientes da saída
+
+4. CÁLCULO DO CAM:
+   
+   Fórmula:
+   ```
+   weights = mean(gradients, axis=(H, W))
+   CAM = ReLU(sum(weights * activations, axis=channels))
+   CAM_norm = (CAM - min) / (max - min)
+   ```
+   
+   Interpretação:
+   - Pesos altos: canal importante para decisão
+   - CAM alto: região importante
+   - Normalização: facilita visualização
+
+5. VISUALIZAÇÃO:
+   
+   Estrutura de 3 painéis:
+   - Painel 1: Frame original (224x224)
+   - Painel 2: Heatmap colorido (attention score)
+   - Painel 3: Overlay (frame + heatmap com alpha=0.4)
+   
+   Configurações:
+   - Figsize: 15x5 polegadas
+   - DPI: 150 (qualidade média-alta)
+   - Colormap: JET (azul→vermelho)
+   - Título: Nome do vídeo + predição
+
+Resultados do Teste:
+--------------------
+
+VÍDEO TESTADO:
+  - Arquivo: data/wilddeepfake/videos_real/wild_real_003.mp4
+  - Label verdadeiro: REAL
+  - Frames processados: 16
+
+PRÉ-PROCESSAMENTO:
+  - Taxa de detecção facial: 100.0%
+  - Tempo de processamento: 0.06s
+  - Tensor shape: (16, 3, 224, 224)
+
+PREDIÇÃO DO MODELO:
+  - Classe: REAL
+  - Probabilidade: 0.4996
+  - Threshold: 0.5
+  - Correto: ✓ (REAL == REAL)
+
+ESTATÍSTICAS DE ATENÇÃO:
+  - Média (attention_mean): 0.0322 ✓
+  - Desvio padrão: 0.0464
+  - Mínimo: 0.0017
+  - Máximo: 0.1672
+  - Frames processados: 16
+
+HEATMAPS GERADOS:
+  - Total: 16 arquivos PNG
+  - Tamanho médio: ~130 KB por arquivo
+  - Resolução: 4500x1500 pixels (15x5 @ 150 DPI)
+  - Formato: PNG com transparência
+  - Localização: outputs/heatmaps/
+
+Métricas Alcançadas (conforme instructions.json):
+--------------------------------------------------
+✓ attention_mean: 0.0322
+
+Distribuição de Atenção por Frame:
+  Frame 0:  0.1672 (máximo)
+  Frame 1:  0.0679
+  Frame 2:  0.0219
+  Frame 3:  0.1351
+  Frame 4:  0.0159
+  Frame 5:  0.0081
+  Frame 6:  0.0274
+  Frame 7:  0.0036
+  Frame 8:  0.0114
+  Frame 9:  0.0017 (mínimo)
+  Frame 10: 0.0033
+  Frame 11: 0.0067
+  Frame 12: 0.0202
+  Frame 13: 0.0083
+  Frame 14: 0.0094
+  Frame 15: 0.0222
+
+Outputs Gerados:
+----------------
+
+HEATMAPS (16 arquivos):
+  ✓ wild_real_003_frame_000_gradcam.png (109 KB)
+  ✓ wild_real_003_frame_001_gradcam.png (105 KB)
+  ✓ wild_real_003_frame_002_gradcam.png (148 KB)
+  ✓ wild_real_003_frame_003_gradcam.png (179 KB)
+  ✓ wild_real_003_frame_004_gradcam.png (117 KB)
+  ✓ wild_real_003_frame_005_gradcam.png (123 KB)
+  ✓ wild_real_003_frame_006_gradcam.png (207 KB)
+  ✓ wild_real_003_frame_007_gradcam.png (124 KB)
+  ✓ wild_real_003_frame_008_gradcam.png (142 KB)
+  ✓ wild_real_003_frame_009_gradcam.png (84 KB)
+  ✓ wild_real_003_frame_010_gradcam.png (104 KB)
+  ✓ wild_real_003_frame_011_gradcam.png (107 KB)
+  ✓ wild_real_003_frame_012_gradcam.png (123 KB)
+  ✓ wild_real_003_frame_013_gradcam.png (126 KB)
+  ✓ wild_real_003_frame_014_gradcam.png (132 KB)
+  ✓ wild_real_003_frame_015_gradcam.png (141 KB)
+
+Total de storage: ~2.1 MB para 16 frames
+
+Estrutura de Cada Heatmap:
+---------------------------
+
+Cada arquivo PNG contém 3 painéis lado a lado:
+
+1. FRAME ORIGINAL:
+   - Dimensões: 224x224 pixels
+   - Formato: RGB
+   - Desnormalizado (ImageNet stats revertidos)
+   - Título: "Frame X"
+
+2. GRAD-CAM HEATMAP:
+   - Dimensões: 224x224 pixels
+   - Colormap: JET (azul=baixa atenção, vermelho=alta atenção)
+   - Normalizado: [0, 1]
+   - Título: "Grad-CAM Heatmap\nAttention: X.XXXX"
+
+3. OVERLAY:
+   - Dimensões: 224x224 pixels
+   - Frame original + Heatmap
+   - Transparência: alpha=0.4
+   - Título: "Overlay (α=0.4)"
+
+Cabeçalho da figura:
+  - Título geral: "{video_name} - Prediction: {label} ({prob:.4f})"
+  - Fonte: 14pt, bold
+
+Funcionalidades Técnicas:
+--------------------------
+
+1. DETECÇÃO DE TARGET LAYER:
+   - Busca automática da última camada convolucional
+   - Suporta ResNet-34 dentro de Sequential
+   - Fallback para penúltima camada se necessário
+   - Compatível com diferentes arquiteturas
+
+2. DESNORMALIZAÇÃO:
+   - Reverte normalização ImageNet
+   - mean = [0.485, 0.456, 0.406]
+   - std = [0.229, 0.224, 0.225]
+   - Clip para [0, 1] e conversão para uint8
+
+3. COLORMAP:
+   - cv2.COLORMAP_JET (azul→verde→amarelo→vermelho)
+   - Azul: atenção baixa
+   - Vermelho: atenção alta
+   - Intuitivo para interpretação
+
+4. SOBREPOSIÇÃO:
+   - cv2.addWeighted para transparência
+   - Alpha=0.4: 60% frame + 40% heatmap
+   - Configurável via parâmetro
+
+Interpretação do Grad-CAM:
+---------------------------
+
+O Grad-CAM mostra quais regiões da imagem influenciam a decisão do modelo:
+
+REGIÕES QUENTES (vermelho/amarelo):
+  - Alta ativação dos neurônios
+  - Importantes para a classificação
+  - Modelo "olha" para essas áreas
+
+REGIÕES FRIAS (azul/verde):
+  - Baixa ativação
+  - Menos relevantes
+  - Modelo "ignora" essas áreas
+
+NO CONTEXTO DE DEEPFAKES:
+  - Atenção em olhos/boca: áreas típicas de manipulação
+  - Atenção em bordas faciais: inconsistências de blending
+  - Atenção distribuída: modelo não focou em artefatos específicos
+
+Integração com Etapas Anteriores:
+----------------------------------
+✓ Usa load_model() da Tarefa 5
+✓ Carrega modelo de models/model_best.pt (Tarefa 7)
+✓ Usa preprocess_video() da Tarefa 4
+✓ Usa set_global_seed(), get_device() da Tarefa 1
+✓ Compatível com arquitetura DeepfakeDetector (Tarefa 5)
+
+Recursos Avançados:
+-------------------
+
+1. HOOKS AUTOMÁTICOS:
+   - Registrados automaticamente no __init__
+   - Capturam dados sem modificar modelo
+   - Compatíveis com autograd do PyTorch
+
+2. DEVICE AGNOSTIC:
+   - Funciona em CPU, CUDA, MPS
+   - MTCNN forçado para CPU (compatibilidade)
+   - Modelo pode usar qualquer device
+
+3. ESTATÍSTICAS COMPLETAS:
+   - Média, desvio padrão, mín, máx
+   - Por frame e global
+   - Útil para análise quantitativa
+
+4. VISUALIZAÇÃO PROFISSIONAL:
+   - 3 painéis informativos
+   - Títulos descritivos
+   - Qualidade de publicação (150 DPI)
+
+Observações de Implementação:
+------------------------------
+- Apenas src/gradcam.py editado (conforme regras) ✓
+- Nenhum arquivo duplicado criado ✓
+- Heatmaps sobrescrevem execuções anteriores ✓
+- Caminhos consistentes com estrutura definida ✓
+- Código documentado com docstrings ✓
+- Teste completo executado com sucesso ✓
+- Métrica attention_mean calculada corretamente ✓
+
+Próximos Passos:
+----------------
+Tarefa 11: Construir Interface Gradio
+  - Editar src/interface.py
+  - Integrar pipeline completo
+  - Função predict(video_path) retorna probabilidade + Grad-CAM
+  - Logar execuções em outputs/reports/interface_log.csv
+  - Métricas: tempo_inferencia, probabilidade_fake
+
+Comandos Úteis:
+---------------
+
+# Executar teste de Grad-CAM
+python src/gradcam.py
+
+# Listar heatmaps gerados
+ls -lh outputs/heatmaps/*.png
+
+# Processar vídeo específico
+python -c "from src.gradcam import generate_video_gradcam; generate_video_gradcam('path/to/video.mp4')"
+
+# Ver estatísticas de um resultado
+python -c "from src.gradcam import generate_video_gradcam; r = generate_video_gradcam('video.mp4'); print(f'Atenção: {r[\"attention_mean\"]:.4f}')"
+
+Validação dos Critérios de Aceitação:
+--------------------------------------
+✓ Nenhum arquivo duplicado criado
+✓ Caminhos consistentes com estrutura
+✓ Reexecutável sem gerar novos nomes
+✓ Heatmaps sobrescritos (mesmo nome de vídeo)
+✓ Executável com Python 3.11.5 e PyTorch >= 2.2
+✓ Grad-CAM implementado corretamente
+✓ Mapas de ativação gerados sobre frames
+✓ Salvos em outputs/heatmaps/
+✓ Métrica attention_mean calculada

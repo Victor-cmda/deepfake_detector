@@ -1,0 +1,152 @@
+{
+  "project_name": "Deepfake Detector",
+  "python_version": "3.11.5",
+  "framework": "PyTorch >= 2.2",
+  "overview": "Instruções para desenvolvimento completo e não redundante do protótipo de detecção de deepfakes com explicabilidade visual, conforme especificações do Capítulo 4 do TCC. O agente deve seguir cada tarefa na ordem, editando apenas os arquivos existentes e nunca criando duplicatas.",
+  "rules": {
+    "file_uniqueness": true,
+    "edit_existing_only": true,
+    "no_alternate_names": true,
+    "overwrite_outputs": true,
+    "consistent_paths": true
+  },
+  "directory_structure": {
+    "root": "deepfake_detector/",
+    "subfolders": [
+      "data/",
+      "models/",
+      "outputs/",
+      "outputs/figures/",
+      "outputs/heatmaps/",
+      "outputs/logs/",
+      "outputs/reports/",
+      "src/"
+    ],
+    "source_files": [
+      "src/preprocessing.py",
+      "src/model.py",
+      "src/gradcam.py",
+      "src/train.py",
+      "src/evaluate.py",
+      "src/interface.py",
+      "src/utils.py"
+    ],
+    "root_files": [
+      "main.py",
+      "requirements.txt",
+      "README.md"
+    ]
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Configurar ambiente e estrutura",
+      "description": "Criar pastas e arquivos fixos, instalar dependências listadas e configurar seed global no utils.py.",
+      "output": "Estrutura de diretórios única e requirements.txt completo."
+    },
+    {
+      "id": 2,
+      "title": "Organizar datasets",
+      "description": "Organizar FaceForensics++, Celeb-DF-v2 e WildDeepfake em subpastas 'videos_real' e 'videos_fake'. Criar arquivos CSV de índice únicos em /data/.",
+      "metrics": ["total_videos", "frames_por_video"]
+    },
+    {
+      "id": 3,
+      "title": "Gerar divisão treino/validação/teste",
+      "description": "Gerar arquivo único data/splits_faceforensicspp.csv com colunas video_path, label e split. Distribuição 70/15/15. Testes externos permanecem completos.",
+      "output": "data/splits_faceforensicspp.csv"
+    },
+    {
+      "id": 4,
+      "title": "Implementar pré-processamento",
+      "description": "Editar src/preprocessing.py para incluir funções de extração de frames, detecção facial MTCNN, recorte, normalização e visualização de exemplos.",
+      "metrics": ["taxa_detec_facial", "tempo_processamento"]
+    },
+    {
+      "id": 5,
+      "title": "Implementar modelo CNN–LSTM",
+      "description": "Editar src/model.py com arquitetura DeepfakeDetector (ResNet-34 + BiLSTM 256x2 + sigmoide). Nenhum arquivo extra deve ser criado.",
+      "metrics": ["num_params", "tempo_forward"]
+    },
+    {
+      "id": 6,
+      "title": "Criar Dataset e DataLoader",
+      "description": "Editar src/preprocessing.py para incluir classe VideoDataset, collate_fn e função get_dataloaders().",
+      "metrics": ["tempo_batch", "uso_memoria"]
+    },
+    {
+      "id": 7,
+      "title": "Treinamento com monitoramento",
+      "description": "Editar src/train.py. Treinar com Adam, BCE, ReduceLROnPlateau. Salvar melhor modelo e métricas em outputs/metrics_train.csv e models/model_best.pt.",
+      "metrics": ["train_loss", "val_loss", "val_f1", "val_auc"]
+    },
+    {
+      "id": 8,
+      "title": "Implementar Early Stopping",
+      "description": "No mesmo arquivo src/train.py, incluir parada antecipada (paciência 5) e logar melhor época em outputs/logs/early_stopping.txt.",
+      "metrics": ["epoch_melhor_val_f1"]
+    },
+    {
+      "id": 9,
+      "title": "Avaliação e Cross-Dataset",
+      "description": "Editar src/evaluate.py. Avaliar em FaceForensics++, Celeb-DF-v2 e WildDeepfake. Gerar outputs/metrics_cross.csv e gráficos de matriz de confusão e curva ROC.",
+      "metrics": ["accuracy", "precision", "recall", "f1", "auc"]
+    },
+    {
+      "id": 10,
+      "title": "Implementar Grad-CAM",
+      "description": "Editar src/gradcam.py. Gerar mapas de ativação sobre frames e salvar em outputs/heatmaps/. Calcular média de atenção por frame.",
+      "metrics": ["attention_mean"]
+    },
+    {
+      "id": 11,
+      "title": "Construir Interface Gradio",
+      "description": "Editar src/interface.py para integrar o pipeline completo. Função predict(video_path) deve retornar probabilidade e visualização Grad-CAM. Logar execuções em outputs/reports/interface_log.csv.",
+      "metrics": ["tempo_inferencia", "probabilidade_fake"]
+    },
+    {
+      "id": 12,
+      "title": "Gerar figuras e relatórios",
+      "description": "Editar src/evaluate.py para gerar gráficos training_curves.png, f1_by_dataset.png e gradcam_examples.png. Criar outputs/reports/table_metrics.csv.",
+      "metrics": ["legibilidade_figuras", "dimensao_px"]
+    },
+    {
+      "id": 13,
+      "title": "Gerar relatório técnico automatizado",
+      "description": "Editar src/utils.py para gerar outputs/reports/run_report.md e PDF, incluindo versões, métricas e links para figuras.",
+      "metrics": ["linhas_relatorio"]
+    },
+    {
+      "id": 14,
+      "title": "Teste de robustez",
+      "description": "Editar src/evaluate.py para criar função test_robustness() com vídeos degradados. Salvar outputs/reports/robustness.csv e gráfico robustness.png.",
+      "metrics": ["delta_probabilidade"]
+    },
+    {
+      "id": 15,
+      "title": "Documentação final e instruções de uso",
+      "description": "Editar README.md com instruções únicas de instalação, treino, avaliação e uso da interface. Deve citar todos os arquivos finais e comandos exatos.",
+      "output": "README.md finalizado"
+    }
+  ],
+  "outputs_expected": [
+    "models/model_best.pt",
+    "outputs/metrics_train.csv",
+    "outputs/metrics_cross.csv",
+    "outputs/figures/training_curves.png",
+    "outputs/figures/f1_by_dataset.png",
+    "outputs/figures/confusion_matrix.png",
+    "outputs/figures/gradcam_examples.png",
+    "outputs/reports/interface_log.csv",
+    "outputs/reports/run_report.md",
+    "outputs/reports/table_metrics.csv",
+    "outputs/reports/robustness.csv"
+  ],
+  "acceptance_criteria": [
+    "Nenhum arquivo duplicado é criado.",
+    "Todos os caminhos são consistentes com a estrutura definida.",
+    "Cada script pode ser reexecutado sem gerar novos nomes de arquivos.",
+    "Todos os logs e métricas são sobrescritos, nunca replicados.",
+    "O projeto é executável de ponta a ponta com Python 3.11.5 e PyTorch >= 2.2."
+  ]
+}
