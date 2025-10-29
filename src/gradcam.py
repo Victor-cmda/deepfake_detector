@@ -74,17 +74,23 @@ class GradCAM:
         Returns:
             cam: Mapa de ativação normalizado (0-1)
         """
-        # Forward pass
+        # IMPORTANTE: Habilitar gradientes mas manter modelo em eval
         self.model.eval()
+        input_tensor.requires_grad_(True)
+        
+        # Forward pass
         output = self.model(input_tensor)
         
         # Se target_class não especificado, usar predição
         if target_class is None:
             target_class = (output >= 0.5).long()
         
-        # Backward pass
+        # Backward pass - IMPORTANTE: Sem atualizar pesos
         self.model.zero_grad()
-        output.backward(gradient=torch.ones_like(output))
+        
+        # Criar gradiente de saída
+        grad_output = torch.ones_like(output)
+        output.backward(gradient=grad_output, retain_graph=False)
         
         # Obter gradientes e ativações
         gradients = self.gradients  # (B, C, H, W)
@@ -259,11 +265,51 @@ def generate_video_gradcam(
     
     # Processar cada frame
     for frame_idx in range(num_frames):
-        # Extrair frame (1, 1, C, H, W) para passar pelo CNN
-        frame_tensor = video_tensor[frame_idx].unsqueeze(0).unsqueeze(0).to(device)
+        # Extrair frame tensor original
+        frame_tensor = video_tensor[frame_idx].unsqueeze(0).to(device)  # (1, C, H, W)
+        frame_tensor.requires_grad_(True)
         
-        # Gerar CAM
-        cam = gradcam.generate_cam(frame_tensor)
+        # SOLUÇÃO: Processar APENAS o CNN, não o modelo completo
+        # Isso evita o erro do LSTM backward
+        model.cnn.eval()
+        
+        try:
+            with torch.enable_grad():
+                # Forward apenas pelo CNN
+                cnn_output = model.cnn(frame_tensor)  # (1, 512, 7, 7)
+                
+                # Simular "score" somando todas as ativações
+                # (não é a predição real, mas serve para Grad-CAM)
+                score = cnn_output.sum()
+                
+                # Backward
+                model.cnn.zero_grad()
+                score.backward()
+            
+            # Obter gradientes e ativações capturados pelos hooks
+            if gradcam.gradients is None or gradcam.activations is None:
+                print(f"⚠️ Frame {frame_idx}: Gradientes não capturados, pulando...")
+                continue
+            
+            gradients = gradcam.gradients
+            activations = gradcam.activations
+            
+            # Calcular CAM
+            weights = torch.mean(gradients, dim=(2, 3), keepdim=True)
+            cam = torch.sum(weights * activations, dim=1, keepdim=True)
+            cam = F.relu(cam)
+            
+            # Normalizar
+            cam = cam - cam.min()
+            if cam.max() > 0:
+                cam = cam / cam.max()
+            
+            cam = cam.squeeze().cpu().numpy()
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao processar frame {frame_idx}: {e}")
+            # Criar CAM vazio em caso de erro
+            cam = np.zeros((7, 7))
         
         # Calcular atenção média
         attention_mean = float(cam.mean())

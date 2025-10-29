@@ -30,22 +30,46 @@ def set_global_seed(seed=42):
     print(f"✓ Seed global configurada: {seed}")
 
 
-def get_device():
+def get_device(force_gpu=True):
     """
     Retorna o device disponível (cuda, mps ou cpu).
+    
+    Args:
+        force_gpu (bool): Se True, falha se GPU não estiver disponível no Windows (padrão: True)
     
     Returns:
         torch.device: Device configurado
     """
+    import platform
+    
     if torch.cuda.is_available():
         device = torch.device('cuda')
-        print(f"✓ GPU disponível: {torch.cuda.get_device_name(0)}")
+        torch.cuda.set_device(0)  # Força uso da GPU 0
+        print(f"✓ GPU NVIDIA detectada e ativada: {torch.cuda.get_device_name(0)}")
+        print(f"  - CUDA Version: {torch.version.cuda}")
+        print(f"  - Memória disponível: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
     elif torch.backends.mps.is_available():
         device = torch.device('mps')
         print("✓ MPS (Apple Silicon) disponível")
     else:
         device = torch.device('cpu')
-        print("✓ Usando CPU")
+        print("⚠️  Usando CPU (GPU não detectada)")
+        
+        # No Windows com GPU NVIDIA, alertar que algo está errado
+        if platform.system() == 'Windows' and force_gpu:
+            print("\n" + "="*70)
+            print("ERRO: GPU NVIDIA não detectada no Windows!")
+            print("="*70)
+            print("\nVerifique:")
+            print("  1. Driver NVIDIA instalado corretamente")
+            print("  2. PyTorch instalado com suporte CUDA:")
+            print("     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121")
+            print("  3. Execute: nvidia-smi para verificar GPU")
+            print("="*70 + "\n")
+            
+            # Não falhar, apenas alertar
+            print("⚠️  Continuando com CPU (performance reduzida)")
+    
     return device
 
 

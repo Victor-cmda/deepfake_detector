@@ -13,6 +13,9 @@ import pandas as pd
 from datetime import datetime
 import numpy as np
 from PIL import Image
+import cv2
+import tempfile
+import shutil
 
 # Adicionar diretório raiz ao path
 root_dir = Path(__file__).parent.parent
@@ -34,6 +37,72 @@ HEATMAPS_DIR = 'outputs/heatmaps'
 _model_cache = None
 _device_cache = None
 _mtcnn_cache = None
+
+
+def convert_video_for_browser(input_path, output_dir=None):
+    """
+    Converte vídeo para formato compatível com browsers (H.264/AAC).
+    
+    Args:
+        input_path: Caminho do vídeo original
+        output_dir: Diretório para salvar vídeo convertido (padrão: temp)
+        
+    Returns:
+        str: Caminho do vídeo convertido ou None se falhar
+    """
+    try:
+        # Criar diretório temporário se não especificado
+        if output_dir is None:
+            output_dir = tempfile.gettempdir()
+        
+        # Gerar nome para vídeo convertido
+        video_name = Path(input_path).stem
+        output_path = os.path.join(output_dir, f"{video_name}_converted.mp4")
+        
+        # Abrir vídeo
+        cap = cv2.VideoCapture(input_path)
+        if not cap.isOpened():
+            print(f"Erro ao abrir vídeo: {input_path}")
+            return None
+        
+        # Obter propriedades
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        # Configurar codec H.264 (compatível com browsers)
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        if not out.isOpened():
+            print("Erro ao criar VideoWriter com codec avc1, tentando mp4v...")
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        # Copiar frames
+        frame_count = 0
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            out.write(frame)
+            frame_count += 1
+        
+        cap.release()
+        out.release()
+        
+        if frame_count > 0 and os.path.exists(output_path):
+            print(f"✓ Vídeo convertido: {frame_count} frames -> {output_path}")
+            return output_path
+        else:
+            print("Erro: Nenhum frame foi escrito")
+            return None
+            
+    except Exception as e:
+        print(f"Erro ao converter vídeo: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 def initialize_model():
@@ -86,6 +155,32 @@ def predict(video_path, num_frames=16, generate_gradcam=True):
         gradcam_gallery: Lista de imagens Grad-CAM ou None
         log_text: Texto com informações do log
     """
+    # Validar input
+    if video_path is None:
+        return (
+            "⚠️ Nenhum vídeo foi enviado",
+            "Por favor, faça upload de um vídeo para análise",
+            None,
+            "Aguardando upload de vídeo..."
+        )
+    
+    # Verificar se arquivo existe
+    if not os.path.exists(video_path):
+        return (
+            f"❌ ERRO: Arquivo não encontrado",
+            f"Caminho: {video_path}",
+            None,
+            "Arquivo de vídeo não encontrado no sistema"
+        )
+    
+    # Converter vídeo para formato compatível com browser
+    print(f"Convertendo vídeo para formato compatível...")
+    converted_path = convert_video_for_browser(video_path)
+    
+    if converted_path is None:
+        print("⚠️ Conversão falhou, usando vídeo original")
+        converted_path = video_path
+    
     start_time = time.time()
     
     try:
@@ -101,19 +196,39 @@ def predict(video_path, num_frames=16, generate_gradcam=True):
                 "❌ ERRO: Não foi possível processar o vídeo",
                 "Verifique se o vídeo contém faces detectáveis",
                 None,
+                None,
                 "Processamento falhou"
             )
         
         video_tensor, detection_rate, preprocess_time = result
         
+        # Extrair frames para visualização (primeiros 4)
+        sample_frames = []
+        cap = cv2.VideoCapture(video_path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_indices = np.linspace(0, total_frames - 1, min(4, num_frames), dtype=int)
+        
+        for idx in frame_indices:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+            ret, frame = cap.read()
+            if ret:
+                # Converter BGR para RGB
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                sample_frames.append(frame_rgb)
+        
+        cap.release()
+        
         # Preparar para inferência
         video_tensor_batch = video_tensor.unsqueeze(0).to(device)
         
-        # Inferência
-        model.eval()
+        # Inferência - IMPORTANTE: garantir modo eval e no_grad
+        model.eval()  # Modo de avaliação
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = False
+        
         with torch.no_grad():
             output = model(video_tensor_batch)
-            probabilidade_fake = output.item()
+            probabilidade_fake = output.squeeze().item()
         
         # Classificação
         threshold = 0.5
@@ -182,11 +297,11 @@ def predict(video_path, num_frames=16, generate_gradcam=True):
             num_frames=num_frames
         )
         
-        return label_text, prob_text, gradcam_images, log_text
+        return label_text, prob_text, sample_frames, gradcam_images, log_text
         
     except Exception as e:
         error_msg = f"❌ ERRO: {str(e)}"
-        return error_msg, str(e), None, f"Erro durante processamento:\n{str(e)}"
+        return error_msg, str(e), None, None, f"Erro durante processamento:\n{str(e)}"
 
 
 def log_execution(video_path, label, probabilidade_fake, tempo_inferencia, detection_rate, num_frames):
@@ -271,19 +386,8 @@ def create_interface():
     4. Clique em "Analisar Vídeo"
     """
     
-    # Exemplos
+    # Exemplos - removidos para evitar problemas de codec
     examples = []
-    for dataset in ['faceforensicspp', 'celebdf', 'wilddeepfake']:
-        for label_dir in ['videos_real', 'videos_fake']:
-            video_dir = f'data/{dataset}/{label_dir}'
-            if os.path.exists(video_dir):
-                videos = [f for f in os.listdir(video_dir) if f.endswith('.mp4')]
-                if videos:
-                    examples.append([os.path.join(video_dir, videos[0]), 16, True])
-                    if len(examples) >= 3:
-                        break
-        if len(examples) >= 3:
-            break
     
     # Criar interface
     with gr.Blocks(css=custom_css, title="Deepfake Detector") as interface:
@@ -293,9 +397,10 @@ def create_interface():
         with gr.Row():
             with gr.Column(scale=1):
                 # Inputs
-                video_input = gr.Video(
-                    label="📹 Upload de Vídeo",
-                    sources=["upload"]
+                video_input = gr.File(
+                    label="📹 Upload de Vídeo (MP4, AVI, MOV)",
+                    file_types=["video"],
+                    type="filepath"
                 )
                 
                 num_frames_slider = gr.Slider(
@@ -332,6 +437,15 @@ def create_interface():
                     lines=12
                 )
         
+        # Galeria de frames do vídeo
+        frames_gallery = gr.Gallery(
+            label="📹 Frames Processados (amostra)",
+            columns=4,
+            rows=1,
+            height="auto",
+            object_fit="contain"
+        )
+        
         # Galeria de Grad-CAM
         gradcam_gallery = gr.Gallery(
             label="🔍 Visualização Grad-CAM (primeiros 8 frames)",
@@ -345,18 +459,8 @@ def create_interface():
         analyze_btn.click(
             fn=predict,
             inputs=[video_input, num_frames_slider, gradcam_checkbox],
-            outputs=[label_output, prob_output, gradcam_gallery, log_output]
+            outputs=[label_output, prob_output, frames_gallery, gradcam_gallery, log_output]
         )
-        
-        # Exemplos
-        if examples:
-            gr.Examples(
-                examples=examples,
-                inputs=[video_input, num_frames_slider, gradcam_checkbox],
-                outputs=[label_output, prob_output, gradcam_gallery, log_output],
-                fn=predict,
-                cache_examples=False
-            )
         
         # Footer
         gr.Markdown("""

@@ -1,15 +1,23 @@
-# Deepfake Detector
+# 🎭 Deepfake Detector
 
-Protótipo de detecção de deepfakes com explicabilidade visual utilizando CNN-LSTM e Grad-CAM.
+Sistema completo de detecção de deepfakes com explicabilidade visual utilizando CNN-LSTM e Grad-CAM.
 
 ## 📋 Especificações Técnicas
 
-- **Python**: 3.11.5
-- **Framework**: PyTorch >= 2.2
-- **Arquitetura**: ResNet-34 + BiLSTM (256x2 camadas)
+- **Python**: 3.11.9
+- **Framework**: PyTorch 2.5.1 + CUDA 12.1
+- **GPU**: NVIDIA GeForce RTX 4060 (8GB)
+- **Arquitetura**: ResNet-34 + BiLSTM (2 camadas, 256 unidades)
+- **Parâmetros**: 24.4M
 - **Datasets**: FaceForensics++, Celeb-DF-v2, WildDeepfake
 - **Explicabilidade**: Grad-CAM para visualização de atenção
 - **Interface**: Gradio para demonstração interativa
+
+## 🚀 Comandos Rápidos para Apresentação
+
+Veja os arquivos de documentação:
+- **[COMANDOS_APRESENTACAO.md](COMANDOS_APRESENTACAO.md)** - Guia completo detalhado
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Referência rápida (cheat sheet)
 
 ## 📂 Estrutura do Project
 
