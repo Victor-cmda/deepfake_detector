@@ -226,9 +226,20 @@ def predict(video_path, num_frames=16, generate_gradcam=True):
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = False
         
+        # Garantir que modelo retorna probabilidades (não logits)
+        original_return_logits = model.return_logits
+        model.return_logits = False
+        
         with torch.no_grad():
+            # Modelo retorna probabilidade (sigmoid já aplicado quando return_logits=False)
             output = model(video_tensor_batch)
             probabilidade_fake = output.squeeze().item()
+        
+        # Restaurar configuração original
+        model.return_logits = original_return_logits
+        
+        # Garantir que probabilidade está entre 0 e 1
+        probabilidade_fake = float(np.clip(probabilidade_fake, 0.0, 1.0))
         
         # Classificação
         threshold = 0.5

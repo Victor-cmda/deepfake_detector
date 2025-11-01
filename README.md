@@ -5,17 +5,55 @@ Sistema completo de detecção de deepfakes com explicabilidade visual utilizand
 ## 📋 Especificações Técnicas
 
 - **Python**: 3.11.9
-- **Framework**: PyTorch 2.5.1 + CUDA 12.1
-- **GPU**: NVIDIA GeForce RTX 4060 (8GB)
+- **Framework**: PyTorch 2.5.1 + CUDA 12.1 ✅
+- **GPU**: NVIDIA GeForce RTX 4060 (8GB) ✅
 - **Arquitetura**: ResNet-34 + BiLSTM (2 camadas, 256 unidades)
 - **Parâmetros**: 24.4M
-- **Datasets**: FaceForensics++, Celeb-DF-v2, WildDeepfake
+- **Datasets**: FaceForensics++ (7.000 vídeos), Celeb-DF (6.529 vídeos)
+- **Total**: 13.529 vídeos reais processados
 - **Explicabilidade**: Grad-CAM para visualização de atenção
 - **Interface**: Gradio para demonstração interativa
 
-## 🚀 Comandos Rápidos para Apresentação
+## ⚡ Início Rápido
 
-Veja os arquivos de documentação:
+### 1. Verificar CUDA (OBRIGATÓRIO)
+
+```cmd
+check_cuda.bat
+```
+
+**Deve mostrar**: `STATUS: PRONTO PARA TREINAMENTO COM GPU` ✅
+
+Se mostrar erro, execute:
+```cmd
+install_pytorch_cuda.bat
+```
+
+### 2. Treinar Modelo com Dados Reais
+
+```cmd
+.venv-1\Scripts\python.exe train_full.py
+```
+
+⏱️ Tempo estimado: **8-10 horas** (RTX 4060)
+
+### 3. Interface Web
+
+```cmd
+.venv-1\Scripts\python.exe src\interface.py
+```
+
+Acesse: http://localhost:7860
+
+---
+
+## 📚 Documentação Completa
+
+### Configuração CUDA
+- **[CUDA_READY.md](CUDA_READY.md)** - ✅ Status e guia rápido (LEIA PRIMEIRO)
+- **[CUDA_SETUP.md](CUDA_SETUP.md)** - Configuração detalhada e troubleshooting
+
+### Uso do Sistema
 - **[COMANDOS_APRESENTACAO.md](COMANDOS_APRESENTACAO.md)** - Guia completo detalhado
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Referência rápida (cheat sheet)
 

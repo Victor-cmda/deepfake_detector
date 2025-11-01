@@ -1,0 +1,9 @@
+metric;value;description
+Best Epoch;17;Época com melhor AUC de validação
+Best Val AUC;0.8507;Melhor AUC de validação alcançado
+Best Val F1;0.9269;F1-Score na melhor Época
+Final Train Loss;0.0038;Loss de treino na Última Época
+FaceForensics++ - AUC;0.8370;AUC no dataset FaceForensics++
+FaceForensics++ - F1;0.9287;F1-Score no dataset FaceForensics++
+Celeb-DF-v2 - AUC;0.7309;AUC no dataset Celeb-DF-v2
+Celeb-DF-v2 - F1;0.9291;F1-Score no dataset Celeb-DF-v2

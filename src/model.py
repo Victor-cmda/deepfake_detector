@@ -22,20 +22,22 @@ class DeepfakeDetector(nn.Module):
     Output: (batch_size, 1) - probabilidade de ser deepfake
     """
     
-    def __init__(self, num_frames=16, lstm_hidden=256, lstm_layers=2, dropout=0.3, pretrained=True):
+    def __init__(self, num_frames=16, lstm_hidden=256, lstm_layers=2, dropout=0.3, pretrained=True, return_logits=True):
         """
         Inicializa o modelo DeepfakeDetector.
         
         Args:
             num_frames (int): Número de frames por vídeo
-            lstm_hidden (int): Número de unidades LSTM por direção
+            lstm_hidden (int): Unidades LSTM por direção
             lstm_layers (int): Número de camadas LSTM
             dropout (float): Taxa de dropout
-            pretrained (bool): Usar ResNet-34 pré-treinado
+            pretrained (bool): Usar pesos pré-treinados do ResNet-34
+            return_logits (bool): Se True, retorna logits (para BCEWithLogitsLoss). Se False, retorna probabilidades.
         """
         super(DeepfakeDetector, self).__init__()
         
         self.num_frames = num_frames
+        self.return_logits = return_logits
         self.lstm_hidden = lstm_hidden
         self.lstm_layers = lstm_layers
         
@@ -77,7 +79,7 @@ class DeepfakeDetector(nn.Module):
             x (torch.Tensor): Input tensor (batch_size, num_frames, C, H, W)
             
         Returns:
-            torch.Tensor: Probabilidades de deepfake (batch_size, 1)
+            torch.Tensor: Logits (se return_logits=True) ou probabilidades (se return_logits=False) (batch_size, 1)
         """
         batch_size, num_frames, c, h, w = x.size()
         
@@ -102,10 +104,13 @@ class DeepfakeDetector(nn.Module):
         
         # 3. Classificação
         x = self.dropout(lstm_out)
-        x = self.fc(x)  # (batch_size, 1)
-        x = self.sigmoid(x)  # (batch_size, 1)
+        logits = self.fc(x)  # (batch_size, 1) - logits
         
-        return x
+        # Retornar logits ou probabilidades dependendo da configuração
+        if self.return_logits:
+            return logits
+        else:
+            return self.sigmoid(logits)
     
     def get_num_params(self):
         """
@@ -158,7 +163,7 @@ class DeepfakeDetector(nn.Module):
         return self.cnn
 
 
-def create_model(num_frames=16, lstm_hidden=256, lstm_layers=2, dropout=0.3, pretrained=True, device='cpu'):
+def create_model(num_frames=16, lstm_hidden=256, lstm_layers=2, dropout=0.3, pretrained=True, device='cpu', return_logits=True):
     """
     Cria e inicializa o modelo DeepfakeDetector.
     
@@ -169,6 +174,7 @@ def create_model(num_frames=16, lstm_hidden=256, lstm_layers=2, dropout=0.3, pre
         dropout (float): Taxa de dropout
         pretrained (bool): Usar pesos pré-treinados do ResNet-34
         device (str): Device ('cpu', 'cuda', 'mps')
+        return_logits (bool): Se True, modelo retorna logits (para BCEWithLogitsLoss)
         
     Returns:
         DeepfakeDetector: Modelo inicializado
@@ -178,7 +184,8 @@ def create_model(num_frames=16, lstm_hidden=256, lstm_layers=2, dropout=0.3, pre
         lstm_hidden=lstm_hidden,
         lstm_layers=lstm_layers,
         dropout=dropout,
-        pretrained=pretrained
+        pretrained=pretrained,
+        return_logits=return_logits
     )
     
     model = model.to(device)

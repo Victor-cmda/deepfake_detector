@@ -1,12 +1,13 @@
 EARLY STOPPING LOG
 ============================================================
 
-Melhor época: 1
-Melhor Val F1: 0.6667
+Melhor época: 17
+Melhor Val AUC: 0.8507
+Melhor Val Loss: 0.5274
 Paciência configurada: 5
-Épocas sem melhoria: 5
-Total de épocas executadas: 6
-Tempo total de treinamento: 0.31 min
+Épocas sem melhoria: 3
+Total de épocas executadas: 20
+Tempo total de treinamento: 2324.62 min
 
 Modelo salvo em: models/model_best.pt
 Métricas salvas em: outputs/metrics_train.csv

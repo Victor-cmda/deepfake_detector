@@ -22,14 +22,14 @@ def main():
     print("TREINAMENTO COMPLETO DO MODELO DEEPFAKE DETECTOR")
     print("="*70 + "\n")
     
-    # Configurações de treinamento
+    # Configurações de treinamento otimizadas
     config = {
         'splits_csv': 'data/splits_faceforensicspp.csv',
-        'batch_size': 4,
+        'batch_size': 8,  # Aumentado de 4 para 8 (Mixed Precision permite mais)
         'num_frames': 16,
         'num_epochs': 20,  # Máximo de épocas
         'learning_rate': 1e-4,
-        'patience': 5,  # Early stopping
+        'patience': 5,  # Early stopping baseado em Val AUC
         'num_workers': 0
     }
     

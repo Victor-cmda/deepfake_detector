@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.amp import autocast, GradScaler
 import pandas as pd
 from tqdm import tqdm
 from sklearn.metrics import f1_score, roc_auc_score
@@ -25,16 +26,17 @@ from src.model import create_model, save_model, load_model
 from src.preprocessing import get_dataloaders
 
 
-def train_epoch(model, dataloader, criterion, optimizer, device):
+def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None):
     """
-    Executa uma época de treinamento.
+    Executa uma época de treinamento com suporte a Mixed Precision (AMP).
     
     Args:
         model: Modelo DeepfakeDetector
         dataloader: DataLoader de treino
-        criterion: Função de perda (BCELoss)
+        criterion: Função de perda (BCEWithLogitsLoss)
         optimizer: Otimizador (Adam)
         device: Dispositivo (cpu/cuda/mps)
+        scaler: GradScaler para mixed precision (None desabilita AMP)
         
     Returns:
         avg_loss: Perda média da época
@@ -42,6 +44,7 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
     running_loss = 0.0
     num_batches = 0
+    use_amp = scaler is not None and device.type == 'cuda'
     
     for videos, labels in tqdm(dataloader, desc="Training", leave=False):
         # Move dados para o device
@@ -51,13 +54,24 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
         # Zero gradientes
         optimizer.zero_grad()
         
-        # Forward pass
-        outputs = model(videos)
-        loss = criterion(outputs, labels)
-        
-        # Backward pass
-        loss.backward()
-        optimizer.step()
+        # Forward pass com Mixed Precision
+        if use_amp:
+            with autocast('cuda'):
+                outputs = model(videos)
+                loss = criterion(outputs, labels)
+            
+            # Backward pass com scaled gradients
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            # Forward pass normal
+            outputs = model(videos)
+            loss = criterion(outputs, labels)
+            
+            # Backward pass normal
+            loss.backward()
+            optimizer.step()
         
         running_loss += loss.item()
         num_batches += 1
@@ -103,8 +117,8 @@ def validate_epoch(model, dataloader, criterion, device):
             running_loss += loss.item()
             num_batches += 1
             
-            # Coletar predições e labels
-            probs = outputs.cpu().numpy()
+            # Coletar predições e labels (aplicar sigmoid para converter logits em probabilidades)
+            probs = torch.sigmoid(outputs).cpu().numpy()
             preds = (probs >= 0.5).astype(int)
             
             all_probs.extend(probs.flatten())
@@ -201,9 +215,9 @@ def train_model(
     print(f"Train batches: {len(train_loader)}")
     print(f"Val batches: {len(val_loader)}\n")
     
-    # Criar modelo
+    # Criar modelo (return_logits=True para usar com BCEWithLogitsLoss)
     print("Criando modelo...")
-    model = create_model(num_frames=num_frames, pretrained=True)
+    model = create_model(num_frames=num_frames, pretrained=True, device=device, return_logits=True)
     model = model.to(device)
     
     # Contar parâmetros
@@ -212,8 +226,25 @@ def train_model(
     print(f"Total de parâmetros: {total_params:,}")
     print(f"Parâmetros treináveis: {trainable_params:,}\n")
     
-    # Definir função de perda e otimizador
-    criterion = nn.BCELoss()
+    # Calcular class weights para balanceamento
+    # Dataset: 700 REAL (14.3%) vs 4200 FAKE (85.7%)
+    total_samples = len(train_loader.dataset)
+    num_real = sum(1 for label in train_loader.dataset.labels if label == 0)
+    num_fake = sum(1 for label in train_loader.dataset.labels if label == 1)
+    
+    # pos_weight = num_negatives / num_positives (para BCEWithLogitsLoss)
+    # Quanto maior o pos_weight, mais o modelo penaliza erros em positivos (FAKE)
+    # Como REAL é minoria, queremos penalizar mais erros em REAL
+    # Logo: pos_weight = num_real / num_fake (inverso)
+    pos_weight = torch.tensor([num_real / num_fake]).to(device)
+    
+    print(f"Class Balancing:")
+    print(f"  REAL (0): {num_real} ({num_real/total_samples*100:.1f}%)")
+    print(f"  FAKE (1): {num_fake} ({num_fake/total_samples*100:.1f}%)")
+    print(f"  pos_weight: {pos_weight.item():.3f} (penaliza mais erros em FAKE)\n")
+    
+    # Definir função de perda com balanceamento e otimizador
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
     # Scheduler: ReduceLROnPlateau
@@ -225,8 +256,14 @@ def train_model(
         min_lr=1e-7
     )
     
-    # Variáveis para early stopping
-    best_val_f1 = 0.0
+    # Mixed Precision Training (AMP) - apenas para CUDA
+    scaler = GradScaler('cuda') if device.type == 'cuda' else None
+    if scaler:
+        print("✓ Mixed Precision Training (FP16) ativado\n")
+    
+    # Variáveis para early stopping (usando AUC - mais robusto para desbalanceamento)
+    best_val_auc = 0.0
+    best_val_loss = float('inf')
     best_epoch = 0
     epochs_no_improve = 0
     
@@ -253,8 +290,8 @@ def train_model(
         print(f"\nÉpoca {epoch}/{num_epochs}")
         print(f"{'-'*60}")
         
-        # Treinar
-        train_loss = train_epoch(model, train_loader, criterion, optimizer, device)
+        # Treinar (com Mixed Precision se disponível)
+        train_loss = train_epoch(model, train_loader, criterion, optimizer, device, scaler)
         
         # Validar
         val_loss, val_f1, val_auc, val_preds, val_labels = validate_epoch(
@@ -286,18 +323,20 @@ def train_model(
         print(f"  LR:         {current_lr:.2e}")
         print(f"  Tempo:      {epoch_time:.2f}s")
         
-        # Verificar se é o melhor modelo
-        if val_f1 > best_val_f1:
-            best_val_f1 = val_f1
+        # Verificar se é o melhor modelo (usando AUC como métrica principal)
+        if val_auc > best_val_auc:
+            best_val_auc = val_auc
+            best_val_loss = val_loss
             best_epoch = epoch
             epochs_no_improve = 0
             
             # Salvar melhor modelo
             save_model(model, model_save_path)
-            print(f"\n✓ Melhor modelo salvo! (F1: {best_val_f1:.4f})")
+            print(f"\n✓ Melhor modelo salvo! (AUC: {best_val_auc:.4f}, Loss: {best_val_loss:.4f})")
         else:
             epochs_no_improve += 1
-            print(f"\n  Sem melhoria por {epochs_no_improve} época(s)")
+            print(f"\n  Sem melhoria no AUC por {epochs_no_improve} época(s)")
+            print(f"  Melhor AUC: {best_val_auc:.4f} (época {best_epoch})")
         
         # Early stopping
         if epochs_no_improve >= patience:
@@ -318,7 +357,8 @@ def train_model(
         f.write("EARLY STOPPING LOG\n")
         f.write("=" * 60 + "\n\n")
         f.write(f"Melhor época: {best_epoch}\n")
-        f.write(f"Melhor Val F1: {best_val_f1:.4f}\n")
+        f.write(f"Melhor Val AUC: {best_val_auc:.4f}\n")
+        f.write(f"Melhor Val Loss: {best_val_loss:.4f}\n")
         f.write(f"Paciência configurada: {patience}\n")
         f.write(f"Épocas sem melhoria: {epochs_no_improve}\n")
         f.write(f"Total de épocas executadas: {epoch}\n")
@@ -333,7 +373,8 @@ def train_model(
     print("TREINAMENTO CONCLUÍDO")
     print(f"{'='*60}")
     print(f"Melhor época: {best_epoch}")
-    print(f"Melhor Val F1: {best_val_f1:.4f}")
+    print(f"Melhor Val AUC: {best_val_auc:.4f}")
+    print(f"Melhor Val Loss: {best_val_loss:.4f}")
     print(f"Total de épocas: {epoch}")
     print(f"Tempo total: {total_time/60:.2f} min")
     print(f"{'='*60}\n")

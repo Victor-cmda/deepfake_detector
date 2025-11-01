@@ -1257,5 +1257,5 @@ def apply_degradation(video_tensor, degradation_type, param):
 
 
 if __name__ == '__main__':
-    # Executar teste de robustez (Tarefa 14)
-    test_robustness()
+    # Executar avaliação cross-dataset (Tarefa 9)
+    cross_dataset_evaluation()

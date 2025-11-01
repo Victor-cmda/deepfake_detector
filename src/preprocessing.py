@@ -503,7 +503,8 @@ def get_dataloaders(splits_csv, batch_size=4, num_frames=FRAMES_PER_VIDEO,
         
         # Extrair paths e labels
         video_paths = df_split['video_path'].tolist()
-        labels = df_split['label'].tolist()
+        # Converter labels de string para int (0=REAL, 1=FAKE)
+        labels = [1 if label == 'FAKE' else 0 for label in df_split['label'].tolist()]
         
         # Criar dataset
         dataset = VideoDataset(

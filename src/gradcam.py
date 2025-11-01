@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 import numpy as np
+import pandas as pd
 import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -225,10 +226,23 @@ def generate_video_gradcam(
     
     # Obter predição
     model.eval()
+    
+    # Garantir que modelo retorna probabilidades (não logits)
+    original_return_logits = model.return_logits
+    model.return_logits = False
+    
     with torch.no_grad():
+        # Modelo retorna probabilidade (sigmoid já aplicado quando return_logits=False)
         prediction = model(video_tensor_batch)
         prob = prediction.item()
+        
+        # Garantir que está entre 0 e 1
+        prob = float(np.clip(prob, 0.0, 1.0))
+        
         label = "FAKE" if prob >= 0.5 else "REAL"
+    
+    # Restaurar configuração original
+    model.return_logits = original_return_logits
     
     print(f"\nPredição: {label} (probabilidade: {prob:.4f})")
     
@@ -408,15 +422,45 @@ def test_gradcam():
         print("Execute primeiro o treinamento (Tarefa 7).")
         return
     
-    # Buscar um vídeo de teste
+    # Buscar vídeos de teste nos splits
     test_videos = []
-    for dataset in ['faceforensicspp', 'celebdf', 'wilddeepfake']:
-        for label_dir in ['videos_real', 'videos_fake']:
-            video_dir = f'data/{dataset}/{label_dir}'
-            if os.path.exists(video_dir):
-                videos = [f for f in os.listdir(video_dir) if f.endswith('.mp4')]
-                if videos:
-                    test_videos.append(os.path.join(video_dir, videos[0]))
+    
+    # Tentar carregar splits
+    splits_files = [
+        'data/splits_faceforensicspp.csv',
+        'data/splits_celebdf.csv'
+    ]
+    
+    for splits_file in splits_files:
+        if os.path.exists(splits_file):
+            print(f"Carregando splits de: {splits_file}")
+            df = pd.read_csv(splits_file)
+            
+            # Filtrar vídeos de teste
+            test_df = df[df['split'] == 'test']
+            
+            if len(test_df) > 0:
+                # Pegar 1 fake e 1 real
+                fake_videos = test_df[test_df['label'] == 'FAKE']['video_path'].tolist()
+                real_videos = test_df[test_df['label'] == 'REAL']['video_path'].tolist()
+                
+                if fake_videos:
+                    test_videos.append(fake_videos[0])
+                if real_videos:
+                    test_videos.append(real_videos[0])
+                
+                print(f"  - Encontrados {len(fake_videos)} fake e {len(real_videos)} real no teste")
+    
+    # Se não encontrou nos splits, tentar buscar diretamente nas pastas
+    if not test_videos:
+        print("Splits não encontrados, buscando vídeos nas pastas...")
+        for dataset in ['FaceForensics++', 'Celeb-DF-v2']:
+            for label_dir in ['videos_real', 'videos_fake']:
+                video_dir = f'data/{dataset}/{label_dir}'
+                if os.path.exists(video_dir):
+                    videos = [f for f in os.listdir(video_dir) if f.endswith('.mp4')]
+                    if videos:
+                        test_videos.append(os.path.join(video_dir, videos[0]))
     
     if not test_videos:
         print("ERRO: Nenhum vídeo de teste encontrado!")

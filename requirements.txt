@@ -1,8 +1,10 @@
 # Deepfake Detector - Requirements
 # Python 3.11.5
-# PyTorch >= 2.2
+# PyTorch >= 2.2 with CUDA 12.1
 
-# Deep Learning Framework
+# Deep Learning Framework (CUDA 12.1)
+# Para instalar corretamente, use:
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 torch>=2.2.0
 torchvision>=0.17.0
 torchaudio>=2.2.0
